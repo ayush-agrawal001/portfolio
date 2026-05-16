@@ -1,9 +1,13 @@
-import { CliTerminal } from '@/components/cli-terminal';
+import { readFileSync } from 'fs';
+import { join } from 'path';
+import { Desktop } from '@/components/desktop';
 
 export default function Home() {
+  const asciiArt = readFileSync(join(process.cwd(), 'ascii-text.txt'), 'utf-8');
+
   return (
-    <main className="font-terminal w-full h-screen bg-background">
-      <CliTerminal />
+    <main className="h-screen w-full overflow-hidden">
+      <Desktop asciiArt={asciiArt} />
     </main>
   );
 }
