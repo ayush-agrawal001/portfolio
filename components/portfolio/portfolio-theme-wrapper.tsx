@@ -27,7 +27,7 @@ function PortfolioRoot({
     <div
       className={cn(
         interVariable,
-        'portfolio-ui min-h-screen font-sans antialiased',
+        'portfolio-ui min-h-dvh font-sans antialiased',
         isDark && 'dark'
       )}
       style={{ fontFamily: 'var(--font-portfolio-sans), system-ui, sans-serif' }}

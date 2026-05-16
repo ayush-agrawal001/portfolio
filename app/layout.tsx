@@ -1,10 +1,19 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
 
 const geist = Geist({ subsets: ['latin'], variable: '--font-geist' });
 const geistMono = Geist_Mono({ subsets: ['latin'], variable: '--font-geist-mono' });
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: 'cover',
+  themeColor: '#1a1b2e',
+};
 
 export const metadata: Metadata = {
   title: 'Terminal CLI',
@@ -36,7 +45,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning className={`${geist.variable} ${geistMono.variable} bg-background`}>
-      <body className="antialiased bg-background text-foreground min-h-screen">
+      <body suppressHydrationWarning className="antialiased bg-background text-foreground min-h-dvh overflow-x-hidden overscroll-none">
         {children}
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>

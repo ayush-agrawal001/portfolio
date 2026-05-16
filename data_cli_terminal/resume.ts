@@ -9,20 +9,20 @@ export const RESUME = {
     websiteUrl: 'https://ayush-agrawal.in',
   },
   work: [
-    {
-      title: 'Product Engineer',
-      company: 'Secure Global Technologies',
-      type: 'Freelance Experience',
-      bullets: [
-        'Developed smart contracts for their BNB Chain infrastructure.',
-        'Resolved frontend issues and improved the overall user experience for customers.',
-        'Built a custom CMS from scratch for administrative and content management operations.',
-        'Developed and optimized landing pages with a strong focus on UI engineering and user experience.',
-        'Integrated APIs from Hyperliquid into the platform to enable trading functionalities.',
-        'Built a trading terminal from scratch for spot and perpetual trading workflows.',
-        'Contributed to backend development by designing and organizing APIs based on their functionality and use cases.',
-      ],
-    },
+    // {
+    //   title: 'Product Engineer',
+    //   company: 'Secure Global Technologies',
+    //   type: 'Freelance Experience',
+    //   bullets: [
+    //     'Developed smart contracts for their BNB Chain infrastructure.',
+    //     'Resolved frontend issues and improved the overall user experience for customers.',
+    //     'Built a custom CMS from scratch for administrative and content management operations.',
+    //     'Developed and optimized landing pages with a strong focus on UI engineering and user experience.',
+    //     'Integrated APIs from Hyperliquid into the platform to enable trading functionalities.',
+    //     'Built a trading terminal from scratch for spot and perpetual trading workflows.',
+    //     'Contributed to backend development by designing and organizing APIs based on their functionality and use cases.',
+    //   ],
+    // },
     {
       title: 'Software Engineer Intern',
       company: 'Trench',

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback, ReactNode } from 'react';
+import { useRouter } from 'next/navigation';
 import { CliTerminal } from '@/components/cli-terminal';
 import { motion } from 'framer-motion';
 
@@ -29,6 +30,10 @@ interface CursorPos {
 interface DesktopProps {
     asciiArt: string;
 }
+
+/** Space reserved above the bottom taskbar (icons + safe area). */
+const TASKBAR_INSET = 'calc(5rem + env(safe-area-inset-bottom, 0px))';
+const TOPBAR_HEIGHT = 32;
 
 // ── GNOME-style system info hooks ──────────────────────────────────────────────
 function useNetworkSpeed() {
@@ -134,29 +139,33 @@ function VolumePopover({ volume, setVolume, onClose }: { volume: number; setVolu
 
 // ── Main Desktop ───────────────────────────────────────────────────────────────
 export function Desktop({ asciiArt }: DesktopProps) {
+    const router = useRouter();
+
     useEffect(() => {
         document.documentElement.classList.remove('light', 'dark');
     }, []);
     const [cursor, setCursor] = useState<CursorPos>({ x: -100, y: -100 });
     const [clicking, setClicking] = useState(false);
     const [hovering, setHovering] = useState(false);
-    const [time, setTime] = useState('');
     const [showVolume, setShowVolume] = useState(false);
+    const [mounted, setMounted] = useState(false);
 
-    // Track highest zIndex
-    const [topZ, setTopZ] = useState(50);
-    const [isMobile, setIsMobile] = useState(false);
+    // Track highest zIndex (windows stay below taskbar on mobile)
+    const [topZ, setTopZ] = useState(40);
+    const [isNarrow, setIsNarrow] = useState(false);
 
     useEffect(() => {
-        const check = () => setIsMobile(window.innerWidth < 768);
-        check();
-        window.addEventListener('resize', check);
-        return () => window.removeEventListener('resize', check);
+        setMounted(true);
+        const mq = window.matchMedia('(max-width: 767px)');
+        const update = () => setIsNarrow(mq.matches);
+        update();
+        mq.addEventListener('change', update);
+        return () => mq.removeEventListener('change', update);
     }, []);
 
     const [wins, setWins] = useState<{ terminal: WindowState; about: WindowState }>({
-        terminal: { x: 80, y: 60, width: 860, height: 540, minimized: false, maximized: false, open: false, prevGeometry: null, zIndex: 50 },
-        about: { x: 200, y: 100, width: 520, height: 480, minimized: false, maximized: false, open: false, prevGeometry: null, zIndex: 51 },
+        terminal: { x: 80, y: 60, width: 860, height: 540, minimized: false, maximized: false, open: false, prevGeometry: null, zIndex: 30 },
+        about: { x: 200, y: 100, width: 520, height: 480, minimized: false, maximized: false, open: false, prevGeometry: null, zIndex: 31 },
     });
 
     const [icons, setIcons] = useState<{ terminal: IconState; about: IconState } | null>(null);
@@ -177,17 +186,6 @@ export function Desktop({ asciiArt }: DesktopProps) {
 
     // Dragging state
     const draggingObj = useRef<{ type: 'window' | 'icon' | 'resize'; id: 'terminal' | 'about'; offsetX: number; offsetY: number; startW?: number; startH?: number } | null>(null);
-
-    // Clock
-    useEffect(() => {
-        const tick = () => {
-            const now = new Date();
-            setTime(now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }));
-        };
-        tick();
-        const id = setInterval(tick, 1000);
-        return () => clearInterval(id);
-    }, []);
 
     // Custom cursor tracking & Interactions
     useEffect(() => {
@@ -261,8 +259,11 @@ export function Desktop({ asciiArt }: DesktopProps) {
 
     // Focus Window
     const focusWindow = (id: 'terminal' | 'about') => {
-        setTopZ(z => z + 1);
-        setWins(w => ({ ...w, [id]: { ...w[id], zIndex: topZ + 1 } }));
+        setTopZ(z => {
+            const next = Math.min(z + 1, 45);
+            setWins(w => ({ ...w, [id]: { ...w[id], zIndex: next } }));
+            return next;
+        });
     };
 
     const startDragWindow = (e: React.MouseEvent, id: 'terminal' | 'about') => {
@@ -320,13 +321,43 @@ export function Desktop({ asciiArt }: DesktopProps) {
         const win = wins[id];
         if (!win.open || win.minimized) return null;
 
-        if (isMobile) {
+        if (isNarrow) {
             return (
                 <div
-                    className="absolute inset-x-0 bottom-[56px] top-8 flex flex-col overflow-hidden bg-[#0a0a0a]"
-                    style={{ zIndex: win.zIndex }}
+                    className="absolute inset-x-0 flex flex-col overflow-hidden bg-[#0a0a0a]"
+                    style={{
+                        top: 'max(2rem, env(safe-area-inset-top, 0px))',
+                        bottom: TASKBAR_INSET,
+                        zIndex: Math.min(win.zIndex, 45),
+                    }}
                 >
-                    <div className="flex-1 overflow-hidden">
+                    <div
+                        className="flex shrink-0 items-center justify-between border-b border-white/10 px-3 py-2"
+                        style={{ background: 'rgba(10,11,20,0.98)' }}
+                    >
+                        <span className="font-terminal text-[11px] tracking-wide text-[#565f89] truncate pr-2">
+                            {title}
+                        </span>
+                        <div className="flex shrink-0 items-center gap-1">
+                            <button
+                                type="button"
+                                className="flex h-11 w-11 items-center justify-center rounded-lg touch-manipulation active:bg-white/10"
+                                aria-label="Minimize"
+                                onClick={() => minimizeWindow(id)}
+                            >
+                                <span className="block h-0.5 w-4 rounded bg-[#e0af68]" />
+                            </button>
+                            <button
+                                type="button"
+                                className="flex h-11 w-11 items-center justify-center rounded-lg touch-manipulation active:bg-white/10"
+                                aria-label="Close"
+                                onClick={() => closeWindow(id)}
+                            >
+                                <span className="text-lg leading-none text-[#f7768e]">×</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div className="min-h-0 flex-1 overflow-hidden">
                         {content}
                     </div>
                 </div>
@@ -334,7 +365,7 @@ export function Desktop({ asciiArt }: DesktopProps) {
         }
 
         const windowStyle: React.CSSProperties = win.maximized
-            ? { top: 0, left: 0, width: '100vw', height: '100vh' }
+            ? { top: TOPBAR_HEIGHT, left: 0, right: 0, bottom: TASKBAR_INSET, width: '100vw' }
             : { top: win.y, left: win.x, width: win.width, height: win.height };
 
         return (
@@ -407,22 +438,28 @@ export function Desktop({ asciiArt }: DesktopProps) {
         );
     };
 
+    if (!mounted) {
+        return (
+            <div className="relative h-dvh w-screen overflow-hidden bg-black" />
+        );
+    }
+
     return (
         <div
-            className="relative h-screen w-screen overflow-hidden select-none bg-black"
+            className={`relative h-dvh w-screen overflow-hidden bg-black${isNarrow ? '' : ' select-none'}`}
             style={{
-                backgroundImage: `url(${isMobile ? '/mobile-wallpaper.png' : '/desktop_wallpaper.jpg'})`,
+                backgroundImage: `url(${isNarrow ? '/mobile-wallpaper.png' : '/desktop_wallpaper.jpg'})`,
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
                 backgroundRepeat: 'no-repeat',
-                cursor: isMobile ? 'auto' : 'none',
+                cursor: isNarrow ? 'auto' : 'none',
             }}
         >
             {/* Dark overlay for GNOME dark theme */}
             <div className="absolute inset-0 pointer-events-none" style={{ background: 'rgba(5,5,10,0.45)', zIndex: 0 }} />
 
             {/* Custom cursor  */}
-            {!isMobile && (
+            {!isNarrow && (
                 <div
                     className="pointer-events-none fixed z-[9999]"
                     style={{
@@ -466,7 +503,7 @@ export function Desktop({ asciiArt }: DesktopProps) {
             </div>
 
             {/* Desktop icons */}
-            {!isMobile && (
+            {!isNarrow && (
                 <motion.button
                     drag
                     dragMomentum={false}
@@ -499,17 +536,21 @@ export function Desktop({ asciiArt }: DesktopProps) {
                 </motion.button>
             )}
 
-            {isMobile && (!wins.terminal.open || wins.terminal.minimized) && (!wins.about.open || wins.about.minimized) && (
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 flex flex-col items-center gap-2">
-                    <button className="flex flex-col items-center gap-2" onClick={() => toggleWindow('terminal')}>
-                        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-zinc-900 border border-white/5 shadow-xl">
-                            <svg width="20" height="20" viewBox="0 0 32 32" fill="none">
+            {isNarrow && (!wins.terminal.open || wins.terminal.minimized) && (!wins.about.open || wins.about.minimized) && (
+                <div className="absolute top-1/2 left-1/2 z-30 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-2 pointer-events-auto">
+                    <button
+                        type="button"
+                        className="flex min-h-12 min-w-12 flex-col items-center justify-center gap-1.5 rounded-xl p-2 active:scale-95 touch-manipulation"
+                        onClick={() => toggleWindow('terminal')}
+                    >
+                        <div className="flex h-8 w-8 items-center justify-center rounded-xl border border-white/5 bg-zinc-900 shadow-lg">
+                            <svg width="16" height="16" viewBox="0 0 32 32" fill="none">
                                 <rect width="32" height="32" rx="8" fill="#1a1b2e" />
                                 <path d="M7 10.5 L14 16 L7 21.5" stroke="#9ece6a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
                                 <line x1="16" y1="22" x2="25" y2="22" stroke="#7aa2f7" strokeWidth="2.5" strokeLinecap="round" />
                             </svg>
                         </div>
-                        <span className="text-[10px] font-medium text-white drop-shadow-md">Terminal</span>
+                        <span className="text-[9px] font-medium text-white drop-shadow-md">Terminal</span>
                     </button>
                 </div>
             )}
@@ -575,17 +616,18 @@ export function Desktop({ asciiArt }: DesktopProps) {
                 </div>
             ))}
 
-            {/* Taskbar */}
+            {/* Taskbar — z-[100] keeps it above mobile windows */}
             <div
-                className="absolute bottom-0 left-0 right-0 z-40 flex items-center justify-center gap-3 px-4 py-2"
-                style={{ background: 'rgba(5,5,10,0.82)', backdropFilter: 'blur(20px)', borderTop: '1px solid rgba(255,255,255,0.06)' }}
+                className="absolute bottom-0 left-0 right-0 z-[100] flex items-center justify-center gap-4 px-4 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]"
+                style={{ background: 'rgba(5,5,10,0.92)', backdropFilter: 'blur(20px)', borderTop: '1px solid rgba(255,255,255,0.06)' }}
             >
                 <button
-                    className="relative flex flex-col items-center gap-0.5 transition-all duration-200 hover:scale-110"
-                    style={{ cursor: 'none' }}
+                    type="button"
+                    className="relative flex min-h-12 min-w-12 flex-col items-center justify-center gap-0.5 transition-all duration-200 hover:scale-110 active:scale-95 touch-manipulation"
+                    style={{ cursor: isNarrow ? 'pointer' : 'none' }}
                     onClick={() => wins.terminal.open ? (wins.terminal.minimized ? restoreWindow('terminal') : minimizeWindow('terminal')) : toggleWindow('terminal')}
                 >
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl transition-all duration-200" style={{ background: wins.terminal.open ? 'rgba(122,162,247,0.2)' : 'rgba(13,14,24,0.8)', border: wins.terminal.open ? '1px solid rgba(122,162,247,0.5)' : '1px solid rgba(122,162,247,0.2)', boxShadow: wins.terminal.open ? '0 0 12px rgba(122,162,247,0.25)' : 'none' }}>
+                    <div className="flex h-11 w-11 items-center justify-center rounded-xl transition-all duration-200" style={{ background: wins.terminal.open ? 'rgba(122,162,247,0.2)' : 'rgba(13,14,24,0.8)', border: wins.terminal.open ? '1px solid rgba(122,162,247,0.5)' : '1px solid rgba(122,162,247,0.2)', boxShadow: wins.terminal.open ? '0 0 12px rgba(122,162,247,0.25)' : 'none' }}>
                         <svg width="22" height="22" viewBox="0 0 32 32" fill="none">
                             <path d="M7 10.5 L14 16 L7 21.5" stroke="#9ece6a" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
                             <line x1="16" y1="22" x2="25" y2="22" stroke="#7aa2f7" strokeWidth="2" strokeLinecap="round" />
@@ -595,11 +637,12 @@ export function Desktop({ asciiArt }: DesktopProps) {
                 </button>
 
                 <button
-                    className="relative flex flex-col items-center gap-0.5 transition-all duration-200 hover:scale-110"
-                    style={{ cursor: 'none' }}
+                    type="button"
+                    className="relative flex min-h-12 min-w-12 flex-col items-center justify-center gap-0.5 transition-all duration-200 hover:scale-110 active:scale-95 touch-manipulation"
+                    style={{ cursor: isNarrow ? 'pointer' : 'none' }}
                     onClick={() => wins.about.open ? (wins.about.minimized ? restoreWindow('about') : minimizeWindow('about')) : toggleWindow('about')}
                 >
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl transition-all duration-200" style={{ background: wins.about.open ? 'rgba(187,154,247,0.2)' : 'rgba(13,14,24,0.8)', border: wins.about.open ? '1px solid rgba(187,154,247,0.5)' : '1px solid rgba(187,154,247,0.2)', boxShadow: wins.about.open ? '0 0 12px rgba(187,154,247,0.25)' : 'none' }}>
+                    <div className="flex h-11 w-11 items-center justify-center rounded-xl transition-all duration-200" style={{ background: wins.about.open ? 'rgba(187,154,247,0.2)' : 'rgba(13,14,24,0.8)', border: wins.about.open ? '1px solid rgba(187,154,247,0.5)' : '1px solid rgba(187,154,247,0.2)', boxShadow: wins.about.open ? '0 0 12px rgba(187,154,247,0.25)' : 'none' }}>
                         <svg width="22" height="22" viewBox="0 0 32 32" fill="none">
                             <circle cx="16" cy="16" r="10" stroke="#bb9af7" strokeWidth="1.8" />
                             <line x1="16" y1="13" x2="16" y2="21" stroke="#bb9af7" strokeWidth="2.2" strokeLinecap="round" />
@@ -607,6 +650,30 @@ export function Desktop({ asciiArt }: DesktopProps) {
                         </svg>
                     </div>
                     {wins.about.open && <div className="h-1 w-1 rounded-full" style={{ background: '#bb9af7', boxShadow: '0 0 4px rgba(187,154,247,0.8)' }} />}
+                </button>
+
+                <button
+                    type="button"
+                    className="relative flex min-h-12 min-w-12 flex-col items-center justify-center gap-0.5 transition-all duration-200 hover:scale-110 active:scale-95 touch-manipulation"
+                    style={{ cursor: isNarrow ? 'pointer' : 'none' }}
+                    aria-label="Open UI Portfolio"
+                    onClick={() => router.push('/portfolio')}
+                >
+                    <div
+                        className="flex h-11 w-11 items-center justify-center rounded-xl transition-all duration-200"
+                        style={{
+                            background: 'rgba(13,14,24,0.8)',
+                            border: '1px solid rgba(125,207,255,0.35)',
+                        }}
+                    >
+                        <svg width="22" height="22" viewBox="0 0 32 32" fill="none">
+                            <rect x="4" y="5" width="24" height="22" rx="3" stroke="#7dcfff" strokeWidth="1.8" />
+                            <line x1="4" y1="11" x2="28" y2="11" stroke="#7dcfff" strokeWidth="1.5" />
+                            <line x1="13" y1="11" x2="13" y2="27" stroke="#7dcfff" strokeWidth="1.5" />
+                            <rect x="16" y="14" width="9" height="5" rx="1" fill="rgba(125,207,255,0.25)" stroke="#7dcfff" strokeWidth="1.2" />
+                            <rect x="16" y="21" width="9" height="5" rx="1" fill="rgba(125,207,255,0.15)" stroke="#7dcfff" strokeWidth="1.2" />
+                        </svg>
+                    </div>
                 </button>
             </div>
         </div>

@@ -411,11 +411,14 @@ export function CliTerminal({ asciiArt }: CliTerminalProps) {
     >
       <div
         ref={terminalRef}
-        className="flex-1 overflow-x-auto px-4 py-4 text-sm leading-relaxed"
+        className="flex-1 overflow-x-auto px-3 py-3 pb-[calc(5rem+env(safe-area-inset-bottom,0px))] text-xs leading-relaxed sm:px-4 sm:py-4 sm:pb-[calc(5rem+env(safe-area-inset-bottom,0px))] sm:text-sm"
         style={{
-          overflowY: 'scroll',
+          overflowY: 'auto',
+          WebkitOverflowScrolling: 'touch',
           scrollbarWidth: 'none',
           msOverflowStyle: 'none',
+          overscrollBehavior: 'contain',
+          scrollPaddingBottom: 'calc(5rem + env(safe-area-inset-bottom, 0px))',
         }}
       >
         <style
@@ -496,7 +499,7 @@ export function CliTerminal({ asciiArt }: CliTerminalProps) {
                 onKeyDown={handleKeyDown}
                 onFocus={() => setIsFocused(true)}
                 onBlur={() => setIsFocused(false)}
-                className="absolute left-0 top-0 h-full w-full cursor-text bg-transparent text-transparent caret-transparent outline-none z-20"
+                className="terminal-input-mobile absolute left-0 top-0 h-full w-full cursor-text bg-transparent text-transparent caret-transparent outline-none z-20"
                 spellCheck={false}
                 autoComplete="off"
                 autoCapitalize="off"

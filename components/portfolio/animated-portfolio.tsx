@@ -23,14 +23,14 @@ export function AnimatedPortfolio() {
     <TooltipProvider delayDuration={0}>
       <motion.div
         className={cn(
-          "min-h-screen bg-background font-sans antialiased text-foreground"
+          "min-h-dvh bg-background font-sans antialiased text-foreground pb-24"
         )}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.8, ease: [0.76, 0, 0.24, 1] }}
       >
-          <div className="max-w-2xl mx-auto py-12 sm:py-24 px-6">
+          <div className="max-w-2xl mx-auto px-4 py-8 pb-safe sm:px-6 sm:py-24">
             <main className="flex flex-col space-y-10">
               <section id="hero">
                 <div className="mx-auto w-full max-w-2xl space-y-8">
@@ -38,7 +38,7 @@ export function AnimatedPortfolio() {
                     <div className="flex-col flex flex-1 space-y-1.5 justify-center items-center">
 
                       <BlurFade delay={BLUR_FADE_DELAY}>
-                        <Avatar className="size-48 border">
+                        <Avatar className="size-32 border sm:size-48">
                           <AvatarImage alt={DATA.name} src={DATA.avatarUrl} />
                           <AvatarFallback>{DATA.initials}</AvatarFallback>
                         </Avatar>
