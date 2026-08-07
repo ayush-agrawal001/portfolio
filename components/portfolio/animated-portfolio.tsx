@@ -8,7 +8,6 @@ import { ResumeCard } from "@/components/ui_portfolio_components/resume-card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui_portfolio_components/ui/avatar";
 import { Badge } from "@/components/ui_portfolio_components/ui/badge";
 import { DATA } from "@/data_ui_portfolio/resume";
-import Image from "next/image";
 import Link from "next/link";
 import Markdown from "react-markdown";
 import { motion } from "framer-motion";
@@ -175,52 +174,23 @@ export function AnimatedPortfolio() {
                   </div>
                 </div>
               </section>
-              <section id="ChatGptReview">
-                <div className="space-y-12 w-full py-12">
-                  <BlurFade delay={BLUR_FADE_DELAY * 11}>
-                    <div className="flex flex-col items-center justify-center space-y-4 text-center">
-                      <div className="space-y-2">
-                        <div className="inline-block rounded-lg bg-foreground text-background px-3 py-1 text-sm">
-                          Review
-                        </div>
-                        <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">
-                          ChatGPT Review
-                        </h2>
-                        <p className="text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                          I asked ChatGPT to describe me. Here is what it said:
-                        </p>
-
-                      </div>
-                    </div>
-                  </BlurFade>
-                  <div className="flex flex-col items-center justify-center max-w-[800px] mx-auto">
-                    <Image src="/chatgpt_review.png" alt="ChatGPT Review" width={800} height={800} />
-                  </div>
-                </div>
-              </section>
-              <section id="hackathons">
+              <section id="credentials">
                 <div className="space-y-12 w-full py-12">
                   <BlurFade delay={BLUR_FADE_DELAY * 13}>
                     <div className="flex flex-col items-center justify-center space-y-4 text-center">
                       <div className="space-y-2">
                         <div className="inline-block rounded-lg bg-foreground text-background px-3 py-1 text-sm">
-                          Time Line
+                          Credentials
                         </div>
                         <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">
-                          You can just do things!!
+                          Cohorts &amp; recognitions
                         </h2>
-                        <p className="text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                          I am a Passionate Developer who loves to build things. I have
-                          been working on projects for over a year now. I have built
-                          several projects in the past and I am currently working on
-                          building a new project.
-                        </p>
                       </div>
                     </div>
                   </BlurFade>
                   <BlurFade delay={BLUR_FADE_DELAY * 14}>
                     <ul className="mb-4 ml-4 divide-y divide-dashed border-l">
-                      {DATA.hackathons.map((project, id) => (
+                      {DATA.credentials.map((project, id) => (
                         <BlurFade
                           key={project.title + project.dates}
                           delay={BLUR_FADE_DELAY * 15 + id * 0.05}

@@ -1,3 +1,5 @@
+"use client";
+
 import { Badge } from "@/components/ui_portfolio_components/ui/badge";
 import {
   Card,
@@ -10,6 +12,42 @@ import { cn } from "@/lib/utils";
 import Image from "next/image";
 import Link from "next/link";
 import Markdown from "react-markdown";
+import { useEffect, useRef, useState } from "react";
+
+function LazyYouTubeEmbed({ src, title }: { src: string; title: string }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isInView, setIsInView] = useState(false);
+
+  useEffect(() => {
+    const node = containerRef.current;
+    if (!node) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsInView(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "200px" }
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <div ref={containerRef} className="h-40 w-full">
+      {isInView && (
+        <iframe
+          src={`${src}&autoplay=1&mute=1&controls=0&modestbranding=1&rel=0&showinfo=0&loop=1`}
+          title={title}
+          loading="lazy"
+          className="h-40 w-full"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
+        />
+      )}
+    </div>
+  );
+}
 
 interface Props {
   title: string;
@@ -65,11 +103,7 @@ export function ProjectCard({
           />
         )}
         {ytvideo && (
-          <iframe
-            src={`${ytvideo}&autoplay=1&mute=1&controls=0&modestbranding=1&rel=0&showinfo=0&loop=1`} 
-            title="YouTube video player"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
-          ></iframe>
+          <LazyYouTubeEmbed src={ytvideo} title={`${title} video player`} />
         )}
         {image && (
           <Image

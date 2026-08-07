@@ -54,7 +54,7 @@ const ALL_COMMANDS = [
 
 const DEVELOPER_INFO = [
   `Developer   : ${RESUME.name}`,
-  `Role        : Product Engineer · Full-Stack · Web3`,
+  `Role        : Backend Developer · Full-Stack · Web3`,
   `Contact     : ${RESUME.contact.email}`,
   `Website     : ${RESUME.contact.website}`,
   'Resume      : type resume, contact, experience, projects, skills',
@@ -156,7 +156,7 @@ const COMMANDS: Record<string, { description: string; execute: (args: string[]) 
     description: 'Show information about this terminal',
     execute: () => [
       'Terminal Portfolio v2.0',
-      `Profile  : ${RESUME.name} — Product Engineer & Web3 Developer`,
+      `Profile  : ${RESUME.name} — Backend Developer & Web3 Developer`,
       'Theme    : Tokyo Night · GNOME-style desktop',
       'Stack    : Next.js, React, TypeScript, Tailwind CSS',
       '',

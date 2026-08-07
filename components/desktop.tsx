@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback, ReactNode } from 'react';
-import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { CliTerminal } from '@/components/cli-terminal';
 import { motion } from 'framer-motion';
 
@@ -139,8 +139,6 @@ function VolumePopover({ volume, setVolume, onClose }: { volume: number; setVolu
 
 // ── Main Desktop ───────────────────────────────────────────────────────────────
 export function Desktop({ asciiArt }: DesktopProps) {
-    const router = useRouter();
-
     useEffect(() => {
         document.documentElement.classList.remove('light', 'dark');
     }, []);
@@ -494,7 +492,14 @@ export function Desktop({ asciiArt }: DesktopProps) {
                     <span className="font-terminal text-xs font-bold tracking-widest" style={{ color: '#7aa2f7' }}>bunny㉿portfolio</span>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-4">
+                    <Link
+                        href="/portfolio"
+                        className="font-terminal text-[11px] font-semibold tracking-wide transition-colors duration-150 hover:opacity-80"
+                        style={{ color: '#9ece6a' }}
+                    >
+                        View Ayush's résumé →
+                    </Link>
                     <div className="flex items-center gap-1.5">
                         <WifiIcon />
                         <span className="font-terminal text-[11px] tabular-nums" style={{ color: '#7dcfff' }}>{networkSpeed}</span>
@@ -600,7 +605,7 @@ export function Desktop({ asciiArt }: DesktopProps) {
                             { cmd: 'contact', desc: 'Phone, email, website' },
                             { cmd: 'experience', desc: 'Work history (experience 0, 1)' },
                             { cmd: 'education', desc: 'BITS Pilani · CS degree' },
-                            { cmd: 'projects', desc: 'ChainGenie, Jagruk, Video-call' },
+                            { cmd: 'projects', desc: 'ChainGenie, Jagruk, and more' },
                             { cmd: 'skills', desc: 'Languages, frameworks, DevOps' },
                             { cmd: 'cat resume.md', desc: 'View resume as markdown' },
                             { cmd: 'openuiportfolio', desc: 'Launch animated UI' },
@@ -652,12 +657,11 @@ export function Desktop({ asciiArt }: DesktopProps) {
                     {wins.about.open && <div className="h-1 w-1 rounded-full" style={{ background: '#bb9af7', boxShadow: '0 0 4px rgba(187,154,247,0.8)' }} />}
                 </button>
 
-                <button
-                    type="button"
+                <Link
+                    href="/portfolio"
                     className="relative flex min-h-12 min-w-12 flex-col items-center justify-center gap-0.5 transition-all duration-200 hover:scale-110 active:scale-95 touch-manipulation"
                     style={{ cursor: isNarrow ? 'pointer' : 'none' }}
-                    aria-label="Open UI Portfolio"
-                    onClick={() => router.push('/portfolio')}
+                    aria-label="View résumé / portfolio"
                 >
                     <div
                         className="flex h-11 w-11 items-center justify-center rounded-xl transition-all duration-200"
@@ -674,7 +678,8 @@ export function Desktop({ asciiArt }: DesktopProps) {
                             <rect x="16" y="21" width="9" height="5" rx="1" fill="rgba(125,207,255,0.15)" stroke="#7dcfff" strokeWidth="1.2" />
                         </svg>
                     </div>
-                </button>
+                    <span className="font-terminal text-[8px] font-semibold tracking-wide" style={{ color: '#7dcfff' }}>résumé</span>
+                </Link>
             </div>
         </div>
     );

@@ -15,28 +15,125 @@ export const viewport: Viewport = {
   themeColor: '#1a1b2e',
 };
 
+const siteUrl = 'https://ayush-agrawal.in';
+const siteTitle = 'Ayush Agrawal | Web & Backend Developer';
+const siteDescription =
+  'Portfolio of Ayush Agrawal, a backend and full-stack web developer based in India, building Web3 apps, automation tooling, and scalable products with Next.js, Node.js, React, and Solidity.';
+
 export const metadata: Metadata = {
-  title: 'Terminal CLI',
-  description: 'A browser-based CLI interface with authentic terminal experience',
-  generator: 'v0.app',
+  metadataBase: new URL(siteUrl),
+  title: {
+    default: siteTitle,
+    template: '%s | Ayush Agrawal',
+  },
+  description: siteDescription,
+  keywords: [
+    'Ayush Agrawal',
+    'Ayush Agrawal web developer',
+    'Ayush Agrawal backend developer',
+    'Ayush Agrawal portfolio',
+    'web developer',
+    'backend developer',
+    'automation engineer',
+    'full-stack developer',
+    'Web3 developer',
+    'blockchain developer',
+    'Next.js developer',
+    'React developer',
+    'Solana developer',
+    'freelance web developer India',
+  ],
+  authors: [{ name: 'Ayush Agrawal', url: siteUrl }],
+  creator: 'Ayush Agrawal',
+  publisher: 'Ayush Agrawal',
+  generator: 'Next.js',
+  alternates: {
+    canonical: siteUrl,
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  openGraph: {
+    type: 'website',
+    url: siteUrl,
+    siteName: 'Ayush Agrawal',
+    title: siteTitle,
+    description: siteDescription,
+    locale: 'en_IN',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: siteTitle,
+    description: siteDescription,
+    creator: '@bunnyTheRobo001',
+  },
   icons: {
     icon: [
       {
-        url: '/icon-light-32x32.png',
-        media: '(prefers-color-scheme: light)',
+        url: '/icon-32x32.png',
+        sizes: '32x32',
+        type: 'image/png',
       },
       {
-        url: '/icon-dark-32x32.png',
-        media: '(prefers-color-scheme: dark)',
-      },
-      {
-        url: '/icon.svg',
-        type: 'image/svg+xml',
+        url: '/icon.png',
+        sizes: '512x512',
+        type: 'image/png',
       },
     ],
     apple: '/apple-icon.png',
   },
 }
+
+const personJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Person',
+  name: 'Ayush Agrawal',
+  url: siteUrl,
+  image: `${siteUrl}/profile_5.png`,
+  jobTitle: ['Backend Developer', 'Web Developer', 'Automation Engineer', 'Web3 Developer'],
+  description: siteDescription,
+  email: 'mailto:ayushagrawal4376@gmail.com',
+  worksFor: {
+    '@type': 'Organization',
+    name: 'Botivate',
+  },
+  address: {
+    '@type': 'PostalAddress',
+    addressCountry: 'IN',
+  },
+  alumniOf: {
+    '@type': 'CollegeOrUniversity',
+    name: 'Birla Institute of Technology and Science, Pilani',
+    url: 'https://www.bits-pilani.ac.in/',
+  },
+  knowsAbout: [
+    'Backend Development',
+    'Web Development',
+    'Automation Engineering',
+    'Full-Stack Development',
+    'Web3 Development',
+    'REST APIs',
+    'Authentication & Role-Based Access Control',
+    'Next.js',
+    'React',
+    'Node.js',
+    'Solidity',
+    'CI/CD',
+    'DevOps',
+  ],
+  sameAs: [
+    'https://github.com/ayush-agrawal001',
+    'https://www.linkedin.com/in/ayush-agrawal-8813ab270/',
+    'https://x.com/bunnyTheRobo001',
+  ],
+};
 
 export default function RootLayout({
   children,
@@ -46,6 +143,13 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning className={`${geist.variable} ${geistMono.variable} bg-background`}>
       <body suppressHydrationWarning className="antialiased bg-background text-foreground min-h-dvh overflow-x-hidden overscroll-none">
+        <script
+          type="application/ld+json"
+          // eslint-disable-next-line react/no-danger
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(personJsonLd).replace(/</g, '\\u003c'),
+          }}
+        />
         {children}
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>

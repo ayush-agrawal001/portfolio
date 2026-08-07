@@ -9,28 +9,25 @@ export const RESUME = {
     websiteUrl: 'https://ayush-agrawal.in',
   },
   work: [
-    // {
-    //   title: 'Product Engineer',
-    //   company: 'Secure Global Technologies',
-    //   type: 'Freelance Experience',
-    //   bullets: [
-    //     'Developed smart contracts for their BNB Chain infrastructure.',
-    //     'Resolved frontend issues and improved the overall user experience for customers.',
-    //     'Built a custom CMS from scratch for administrative and content management operations.',
-    //     'Developed and optimized landing pages with a strong focus on UI engineering and user experience.',
-    //     'Integrated APIs from Hyperliquid into the platform to enable trading functionalities.',
-    //     'Built a trading terminal from scratch for spot and perpetual trading workflows.',
-    //     'Contributed to backend development by designing and organizing APIs based on their functionality and use cases.',
-    //   ],
-    // },
+    {
+      title: 'Backend Developer (Intern)',
+      company: 'Botivate',
+      period: 'July 2026 – Present',
+      bullets: [
+        'Developing an external workforce management platform for HR operations.',
+        'Implementing backend APIs and database models for the platform.',
+        'Building authentication and role-based access control (RBAC).',
+      ],
+    },
     {
       title: 'Software Engineer Intern',
       company: 'Trench',
       period: '15 April 2025 – 1 Aug 2025',
       bullets: [
-        'Built a secure Web3 Telegram bot for creating and managing tokens on the Solana blockchain.',
-        'Developed NFT creation and interaction features, enabling users to mint and manage digital assets directly through Telegram.',
-        'Designed and integrated blockchain interaction workflows with a focus on security, usability, and automation.',
+        'Developed and optimized landing pages with a strong focus on UI engineering and UX.',
+        'Integrated Hyperliquid APIs to enable trading functionality on the platform.',
+        'Built a trading terminal from scratch for spot and perpetual trading workflows.',
+        'Designed and organized backend APIs by functionality and use case.',
       ],
     },
   ],
@@ -45,12 +42,12 @@ export const RESUME = {
     {
       id: 'chaingenie',
       name: 'ChainGenie',
-      date: 'Dec 2024',
+      date: 'Nov 2024',
       links: ['Video', 'Github'],
       bullets: [
-        'Built a collaborative platform for bloggers to connect, discuss projects, and work together.',
-        'Implemented secure authentication using Google and GitHub OAuth.',
-        'Developed social and content-sharing features including following users, publishing posts, and community interaction tools.',
+        'Built a secure Web3 Telegram bot that lets users create and manage Solana tokens and NFTs directly from Telegram.',
+        'Implemented minting and interaction workflows integrated with the Solana blockchain.',
+        'Designed the bot architecture with a focus on security, usability, and automation.',
       ],
     },
     {
@@ -59,25 +56,84 @@ export const RESUME = {
       date: 'Dec 2024',
       links: ['Video', 'Github', 'Website'],
       bullets: [
-        'Built a real-time video calling platform using WebRTC and Socket.IO for low-latency peer-to-peer communication.',
-        'Implemented video/audio streaming, connection management, and real-time signaling workflows.',
-        'Developed scalable communication features with a focus on performance, reliability, and seamless user interaction.',
+        'Built a collaborative blogging platform for bloggers to connect, discuss projects, and work together.',
+        'Implemented secure authentication using Google and GitHub OAuth.',
+        'Built the social layer (follows, content sharing) across a React frontend and a Node/Express + PostgreSQL backend.',
+      ],
+    },
+    {
+      id: 'cds-rwa',
+      name: 'Credit Default Swap — RWA Program',
+      date: 'Sep 2025',
+      links: ['Github'],
+      bullets: [
+        'Wrote a Solana on-chain program (Rust + Anchor) modeling a credit default swap agreement for real-world assets.',
+        'Used program-derived accounts (PDAs) to track proposal, approval, and premium-payment state on-chain.',
+        "Minted an NFT via Anchor's SPL token interface to represent the signed agreement once approved.",
+      ],
+    },
+    {
+      id: 'zenqor',
+      name: 'Zenqor — Client Website',
+      date: 'Mar 2025',
+      links: ['Github'],
+      bullets: [
+        'Built the marketing website for Zenqor as freelance/contract work.',
+        'Implemented scroll-driven animations and page transitions using Next.js and Framer Motion.',
+        'Delivered a fully responsive, production-ready site across home, about, solutions, technology, and contact pages.',
+      ],
+    },
+    {
+      id: 'invoice-automation',
+      name: 'Invoice & Billing Automation',
+      date: 'Nov 2024',
+      links: ['Github'],
+      bullets: [
+        'Automated invoice generation and billing using Google Apps Script wired to Google Sheets and an external invoicing API.',
+        'Validated customer PAN/GSTIN tax IDs and auto-split amounts over ₹50,000 into compliant chunks.',
+        'Removed manual invoice creation — invoice links and status are written back to the sheet automatically.',
+      ],
+    },
+    {
+      id: 'sol-wallet',
+      name: 'Web3 Wallet - Vault',
+      date: 'Sep 2024',
+      links: ['Video', 'Github', 'Website'],
+      bullets: [
+        'Built a secure Web3 wallet with seamless integration with the Solana blockchain.',
+        'Implemented key management and transaction signing flows in React + TypeScript.',
       ],
     },
     {
       id: 'videocall',
       name: 'Video-call Web App',
-      date: '2024',
+      date: 'Oct 2024',
       links: ['Video', 'Github'],
-      bullets: [] as string[],
+      bullets: [
+        'Built a real-time video calling platform using WebRTC and Socket.IO for low-latency peer-to-peer communication.',
+        'Implemented signaling, connection management, and audio/video streaming.',
+      ],
+    },
+  ],
+  credentials: [
+    {
+      name: '100xDevs — Complete Web Dev, DevOps & Blockchain Cohort',
+      period: 'Completed',
+      note: "Completed 100xDevs' full cohort covering web development, DevOps, and blockchain engineering end-to-end.",
+    },
+    {
+      name: 'Turbin3 — Solana Async Builder Cohort',
+      period: '2025',
+      note: "Selected for Turbin3's Solana Async Builder cohort — completed hands-on Rust/Anchor program-building assignments.",
     },
   ],
   skills: {
     Languages: ['Rust', 'C', 'TypeScript', 'Python', 'Solidity', 'JavaScript', 'Matplotlib', 'Pandas', 'NumPy'],
-    'Frontend Frameworks': ['Next.js', 'Tailwind CSS', 'React.js', 'Zustand', 'Recoil'],
-    'Backend Frameworks': ['Node.js', 'Axios.js', 'Axum', 'Socket.IO', 'OAuth'],
+    'Frontend Frameworks': ['Next.js', 'Tailwind CSS', 'React.js', 'Zustand', 'Recoil', 'Framer Motion'],
+    'Backend Frameworks': ['Node.js', 'Express.js', 'Axios.js', 'Axum', 'Socket.IO', 'OAuth'],
     'Cloud & DevOps': ['GCP', 'AWS', 'Cloudflare Workers', 'Docker', 'Linux', 'Kubernetes (K8s)', 'Firestore'],
     Databases: ['SQL', 'NoSQL', 'PostgreSQL', 'MongoDB', 'Prisma ORM'],
+    Automation: ['Google Apps Script', 'CI/CD'],
   },
 } as const;
 
@@ -158,10 +214,10 @@ export function formatProject(idOrName: string): string[] {
     `  Links : ${project.links.join(', ') || '—'}`,
     '',
   ];
-  if (project.bullets.length === 0) {
-    lines.push('  (no description in resume)');
-  } else {
+  if (project.bullets.length > 0) {
     project.bullets.forEach((b) => lines.push(`  • ${b}`));
+  } else {
+    lines.push('  (no description in resume)');
   }
   return lines;
 }
