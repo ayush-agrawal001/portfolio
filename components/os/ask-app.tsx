@@ -303,13 +303,16 @@ export function AskApp({ request }: { request: AskRequest }) {
         </div>
         <p className="mx-auto mt-2 max-w-[720px] text-center text-[11px]" style={{ color: OS.muted }} aria-live="polite">
           {talking ? (
-            <span style={{ fontFamily: MONO }}>voice · {voiceStatus}</span>
+            <span style={{ fontFamily: MONO }}>
+              voice · {voiceStatus}
+              {voice.voiceDownload !== null && ` · fetching Koby’s own voice ${Math.round(voice.voiceDownload * 100)}%`}
+            </span>
           ) : voice.error ? (
             <span style={{ color: OS.red }}>{voice.error}</span>
           ) : (
             <>
               {ASSISTANT.name} answers from Ayush’s résumé and portfolio. Questions go to an AI model to write the reply; this site doesn’t store them.
-              {voice.supported && ' In voice mode your browser’s speech service listens, and Google’s reads the answers out.'}
+              {voice.supported && ' In voice mode your browser’s speech service listens; Koby’s voice runs on your device after a one-time 63 MB download, and Google’s reads answers until then.'}
             </>
           )}
         </p>
