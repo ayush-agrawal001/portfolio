@@ -9,6 +9,8 @@ export type Answer = {
   matched?: boolean;
   /** Other passages that matched nearly as well, shown under the main one. */
   related?: { headline: string; body: string }[];
+  /** How Koby holds himself after saying it: waving back at a greeting, shrugging when he has no answer. */
+  mood?: 'greeting' | 'unknown';
 };
 
 /** The hand-written answers about Ayush: the only questions offered as follow-ups. */
@@ -58,7 +60,7 @@ export function exampleAnswer(example: Example, asked: string[] = []): Answer {
     .filter((q, i, all) => all.indexOf(q) === i)
     .filter(fresh([...asked, example.q]))
     .slice(0, 3);
-  return { headline: example.a, body: example.more, sources: example.sources, followups };
+  return { headline: example.a, body: example.more, sources: example.sources, followups, mood: example.q === 'Hello' ? 'greeting' : undefined };
 }
 
 /** Passages found by search, shown word for word: the best one first, the rest as "related". */
@@ -101,6 +103,7 @@ export function unknownAnswer(question: string, asked: string[] = []): Answer {
     body: `I only know what’s in Ayush’s résumé and portfolio, and I’d rather say so than guess. He can tell you himself: ${PROFILE_LINKS.email}.`,
     sources: [{ kind: 'email', label: PROFILE_LINKS.email, href: `mailto:${PROFILE_LINKS.email}` }],
     followups: suggestFollowups(question, asked),
+    mood: 'unknown',
   };
 }
 

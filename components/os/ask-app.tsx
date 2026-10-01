@@ -7,8 +7,9 @@ import { ASSISTANT, EXAMPLES, FAQ, type Source } from '@/lib/ask/knowledge';
 import { answer as searchAnswer } from '@/lib/ask/search';
 import { streamReply, type ChatMessage } from '@/lib/ask/stream';
 import { ArrowRightIcon, AskBadge, MicIcon } from './icons';
+import { KobyPet, type KobyPose } from './koby-pet';
 import { DISPLAY, MONO, OS } from './theme';
-import { useVoice } from './use-voice';
+import { useVoice, type VoicePhase } from './use-voice';
 
 /** `text` is a model reply while it is still being written; `answer` is the finished thing. */
 type AssistantTurn = { role: 'assistant'; status: 'thinking' | 'done'; text?: string; answer?: Answer };
@@ -167,8 +168,8 @@ export function AskApp({ request }: { request: AskRequest }) {
         <div className={`mx-auto flex w-full max-w-[720px] flex-col gap-6 py-8 ${empty ? 'min-h-full justify-center' : ''}`}>
           {empty ? (
             <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }} className="flex flex-col gap-8">
-              <div className="flex items-start gap-5">
-                <Orb size={56} />
+              <div className="flex items-start gap-4">
+                <KobyPet pose={voice.phase === 'listening' ? 'listen' : 'wave'} size={116} />
                 <div className="flex flex-col gap-3">
                   <h1 className="text-[28px] leading-tight tracking-tight sm:text-[34px]" style={{ fontFamily: DISPLAY, fontWeight: 700 }}>
                     Ask me about Ayush.
@@ -224,7 +225,7 @@ export function AskApp({ request }: { request: AskRequest }) {
                       {t.text}
                     </div>
                   ) : (
-                    <AssistantMessage turn={t} isLast={i === turns.length - 1} />
+                    <AssistantMessage turn={t} isLast={i === turns.length - 1} voicePhase={voice.phase} />
                   )}
                 </motion.div>
               ))}
@@ -232,7 +233,7 @@ export function AskApp({ request }: { request: AskRequest }) {
           )}
 
           {!empty && followups.length > 0 && !busy && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.15 }} className="flex flex-col gap-2 pl-11">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.15 }} className="flex flex-col gap-2 pl-[78px]">
               <span className="text-[10px] uppercase tracking-[0.14em]" style={{ color: OS.muted, fontFamily: MONO }}>Recommended</span>
               <div className="flex flex-wrap gap-2">
                 {followups.map((q) => (
@@ -333,12 +334,23 @@ function SourceChip({ source, n }: { source: Source; n: number }) {
   );
 }
 
-function AssistantMessage({ turn, isLast }: { turn: AssistantTurn; isLast: boolean }) {
+/** What the Koby character beside the latest answer is doing. */
+function kobyPose(turn: AssistantTurn, voicePhase: VoicePhase): KobyPose {
+  if (turn.status === 'thinking') return turn.text ? 'talk' : 'think';
+  if (voicePhase === 'speaking') return 'talk';
+  if (voicePhase === 'listening') return 'listen';
+  if (turn.answer?.mood === 'greeting') return 'wave';
+  if (turn.answer?.mood === 'unknown') return 'shrug';
+  return 'proud';
+}
+
+function AssistantMessage({ turn, isLast, voicePhase }: { turn: AssistantTurn; isLast: boolean; voicePhase: VoicePhase }) {
   const writing = turn.status === 'thinking' && !!turn.text;
   const answer: Answer | undefined = turn.answer ?? (turn.text ? { ...splitReply(turn.text), sources: [], followups: [] } : undefined);
   return (
     <div className="flex gap-3" aria-live={isLast ? 'polite' : undefined}>
-      <Orb size={32} busy={turn.status === 'thinking'} />
+      {/* The latest answer is Koby himself talking; earlier ones keep his seal. */}
+      {isLast ? <KobyPet pose={kobyPose(turn, voicePhase)} size={92} /> : <Orb size={32} />}
       <div className="flex min-w-0 flex-1 flex-col gap-2 pt-1">
         {!answer && <span className="os-shimmer text-sm" style={{ fontFamily: MONO }}>{ASSISTANT.name.toLowerCase()} is checking resume.md…</span>}
         {/* A searched passage is quoted as it stands, so say so: it may not answer the exact question. */}
