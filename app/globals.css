@@ -4,20 +4,20 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* Tokyo Night Dark Theme */
+/* Dracula theme (https://draculatheme.com) */
 :root {
-  --background: #1a1b2e;
-  --foreground: #c0caf5;
-  --terminal-cursor: #7aa2f7;
-  --terminal-green: #9ece6a;
-  --terminal-blue: #7aa2f7;
-  --terminal-cyan: #7dcfff;
-  --terminal-purple: #bb9af7;
-  --terminal-yellow: #e0af68;
-  --terminal-red: #f7768e;
-  --terminal-muted: #565f89;
-  --terminal-autocomplete: #3b4261;
-  --terminal-error: #f7768e;
+  --background: #2A2A37;
+  --foreground: #DCD7BA;
+  --terminal-cursor: #7E9CD8;
+  --terminal-green: #98BB6C;
+  --terminal-blue: #7E9CD8;
+  --terminal-cyan: #7FB4CA;
+  --terminal-purple: #D27E99;
+  --terminal-yellow: #E6C384;
+  --terminal-red: #E46876;
+  --terminal-muted: #727169;
+  --terminal-autocomplete: #54546D;
+  --terminal-error: #E46876;
   --card: #16213e;
   --card-foreground: #c0caf5;
   --popover: #16213e;
@@ -47,18 +47,18 @@
 }
 
 .dark {
-  --background: #1a1b2e;
-  --foreground: #c0caf5;
-  --terminal-cursor: #7aa2f7;
-  --terminal-green: #9ece6a;
-  --terminal-blue: #7aa2f7;
-  --terminal-cyan: #7dcfff;
-  --terminal-purple: #bb9af7;
-  --terminal-yellow: #e0af68;
-  --terminal-red: #f7768e;
-  --terminal-muted: #565f89;
-  --terminal-autocomplete: #3b4261;
-  --terminal-error: #f7768e;
+  --background: #2A2A37;
+  --foreground: #DCD7BA;
+  --terminal-cursor: #7E9CD8;
+  --terminal-green: #98BB6C;
+  --terminal-blue: #7E9CD8;
+  --terminal-cyan: #7FB4CA;
+  --terminal-purple: #D27E99;
+  --terminal-yellow: #E6C384;
+  --terminal-red: #E46876;
+  --terminal-muted: #727169;
+  --terminal-autocomplete: #54546D;
+  --terminal-error: #E46876;
   --card: #16213e;
   --card-foreground: #c0caf5;
   --popover: #16213e;
@@ -238,7 +238,7 @@
   }
 
   .font-terminal {
-    font-family: 'Geist Mono', 'Courier New', monospace;
+    font-family: var(--font-plex-mono), 'IBM Plex Mono', 'Courier New', monospace;
     letter-spacing: 0;
   }
 
@@ -274,4 +274,128 @@
   .desktop-cursor * {
     cursor: none !important;
   }
+}
+/* Ask Ayush: shimmering "thinking" text */
+@keyframes os-shimmer {
+  from { opacity: 1; }
+  to { opacity: 0.35; }
+}
+.os-shimmer {
+  color: #c8c093;
+  animation: os-shimmer 1.1s ease-in-out infinite alternate;
+}
+@media (prefers-reduced-motion: reduce) {
+  .os-shimmer { animation: none; }
+}
+/* Tour pet (Mochi the shiba): taps the thing she points at, waves on the welcome card, blinks */
+@keyframes os-pet-poke {
+  0%, 55%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-4px); }
+  38% { transform: translateX(-1px); }
+}
+@keyframes os-pet-wave {
+  from { transform: rotate(-14deg); }
+  to { transform: rotate(16deg); }
+}
+@keyframes os-pet-blink {
+  0%, 92%, 100% { transform: scaleY(1); }
+  96% { transform: scaleY(0.1); }
+}
+.os-pet-poke { animation: os-pet-poke 1.5s ease-in-out infinite; }
+.os-pet-wave { animation: os-pet-wave 0.45s ease-in-out infinite alternate; }
+.os-pet-blink { animation: os-pet-blink 4.2s linear infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .os-pet-poke, .os-pet-wave, .os-pet-blink { animation: none; }
+}
+
+/* Site cursor: a macOS-shaped arrow in sumi ink, and the tour pet's paw over anything clickable.
+   Unlayered on purpose, so it also wins over Tailwind's cursor-pointer utility. */
+html {
+  cursor: url('/cursor-arrow.svg') 5 3, auto;
+}
+a[href],
+button:not(:disabled),
+summary,
+label[for],
+select,
+[role='button'],
+[role='tab'],
+input:is([type='range'], [type='checkbox'], [type='radio'], [type='submit'], [type='button']),
+.cursor-pointer {
+  cursor: url('/cursor-paw.svg') 13 4, pointer;
+}
+
+/* ── Rice-style window borders ──────────────────────────────────────────────
+   Hyprland look: every window has a 2px border; the focused one gets a gradient
+   in the wallpaper's colours that slowly rotates (Hyprland's "borderangle"). */
+@property --os-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+@keyframes os-border-spin {
+  to { --os-angle: 360deg; }
+}
+.os-window {
+  position: relative;
+}
+.os-window::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  padding: 2px;
+  border-radius: inherit;
+  pointer-events: none;
+  background: rgba(84, 84, 109, 0.55);
+  /* Show the fill only in the 2px ring around the edge. */
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+}
+.os-window--active::before {
+  background: conic-gradient(from var(--os-angle), #d27e99, #e6c384, #7e9cd8, #957fb8, #d27e99);
+  animation: os-border-spin 9s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .os-window--active::before { animation: none; }
+}
+
+/* ── Custom scrollbars, shared by every app ─────────────────────────────────
+   A slim pill in the window-border colours, no visible track; it brightens
+   when hovered or dragged. */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(210, 126, 153, 0.65), rgba(126, 156, 216, 0.65)) padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  border-width: 2px;
+  background: linear-gradient(180deg, #d27e99, #e6c384) padding-box;
+}
+::-webkit-scrollbar-thumb:active {
+  background: linear-gradient(180deg, #e6c384, #d27e99) padding-box;
+}
+/* Firefox has no ::-webkit-scrollbar, so it gets the standard properties instead. */
+@supports (-moz-appearance: none) {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(210, 126, 153, 0.75) transparent;
+  }
+}
+/* Opt-out for the few strips that scroll sideways and shouldn't show a bar. */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
 }

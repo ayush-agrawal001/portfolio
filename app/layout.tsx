@@ -1,10 +1,15 @@
 import type { Metadata, Viewport } from 'next'
-import { Geist, Geist_Mono } from 'next/font/google'
+import { Geist, Geist_Mono, IBM_Plex_Mono, IBM_Plex_Sans, Inter, Pixelify_Sans, Shippori_Mincho } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
 
 const geist = Geist({ subsets: ['latin'], variable: '--font-geist' });
 const geistMono = Geist_Mono({ subsets: ['latin'], variable: '--font-geist-mono' });
+const plexSans = IBM_Plex_Sans({ subsets: ['latin'], variable: '--font-plex-sans', weight: ['400', '500', '600'] });
+const plexMono = IBM_Plex_Mono({ subsets: ['latin'], variable: '--font-plex-mono', weight: ['400', '500', '600'] });
+const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
+const pixel = Pixelify_Sans({ subsets: ['latin'], variable: '--font-pixel' });
+const mincho = Shippori_Mincho({ subsets: ['latin'], variable: '--font-mincho', weight: ['400', '500', '700'] });
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -12,7 +17,7 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: 'cover',
-  themeColor: '#1a1b2e',
+  themeColor: '#1f1f28',
 };
 
 const siteUrl = 'https://ayush-agrawal.in';
@@ -141,7 +146,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning className={`${geist.variable} ${geistMono.variable} bg-background`}>
+    <html lang="en" suppressHydrationWarning className={`${geist.variable} ${geistMono.variable} ${plexSans.variable} ${plexMono.variable} ${mincho.variable} ${inter.variable} ${pixel.variable} bg-background`}>
       <body suppressHydrationWarning className="antialiased bg-background text-foreground min-h-dvh overflow-x-hidden overscroll-none">
         <script
           type="application/ld+json"

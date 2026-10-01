@@ -16,6 +16,12 @@ import {
 
 interface CliTerminalProps {
   asciiArt: string;
+  /** Called by `exit`, e.g. to close the window the terminal lives in. */
+  onExit?: () => void;
+  /** Called by `ask [question]` to open the Ask Ayush app. */
+  onAsk?: (question?: string) => void;
+  /** An image shown neofetch-style in the greeting instead of the text ASCII art. */
+  portraitSrc?: string;
 }
 
 interface TerminalLine {
@@ -49,6 +55,8 @@ const ALL_COMMANDS = [
   'color',
   'clear',
   'openuiportfolio',
+  'ask',
+  'sudo',
   'exit',
 ];
 
@@ -78,6 +86,10 @@ const COMMANDS: Record<string, { description: string; execute: (args: string[]) 
       '  project <id>        - Project details (chaingenie, jagruk, videocall)',
       '  skills [category]   - Skills by category',
       '  cat resume.md       - View resume as markdown',
+      '',
+      '  Ask Ayush',
+      '  ask [question]      - Open the Ask Ayush chat app',
+      '  sudo hire ayush     - You know what to do',
       '',
       '  General',
       '  about               - About this terminal',
@@ -218,9 +230,9 @@ const COMMANDS: Record<string, { description: string; execute: (args: string[]) 
     execute: () => [
       'Tokyo Night palette:',
       '  background : #1a1b2e',
-      '  foreground : #c0caf5',
-      '  blue       : #7aa2f7',
-      '  green      : #9ece6a',
+      '  foreground : #DCD7BA',
+      '  blue       : #7E9CD8',
+      '  green      : #98BB6C',
       '  cyan       : #7dcfff',
       '  purple     : #bb9af7',
       '  yellow     : #e0af68',
@@ -285,7 +297,7 @@ function getAutocomplete(input: string): { suffix: string; completion: string } 
   return null;
 }
 
-export function CliTerminal({ asciiArt }: CliTerminalProps) {
+export function CliTerminal({ asciiArt, onExit, onAsk, portraitSrc }: CliTerminalProps) {
   const router = useRouter();
   const [lines, setLines] = useState<TerminalLine[]>([]);
   const [input, setInput] = useState('');
@@ -345,6 +357,16 @@ export function CliTerminal({ asciiArt }: CliTerminalProps) {
       setShowBoot(false);
     } else if (command === 'exit') {
       appendOutput([{ type: 'info', content: 'Closing terminal...' }]);
+      if (onExit) setTimeout(onExit, 400);
+    } else if (command === 'ask' && onAsk) {
+      appendOutput([{ type: 'success', content: 'Launching Ask Ayush...' }]);
+      onAsk(args.join(' ') || undefined);
+    } else if (command === 'sudo') {
+      appendOutput([
+        { type: 'info', content: '[sudo] password for guest: ' },
+        { type: 'error', content: 'guest is not in the sudoers file. This incident will be reported.' },
+        { type: 'success', content: `hint: no root needed. Email ${RESUME.contact.email} instead.` },
+      ]);
     } else if (command === 'openuiportfolio') {
       appendOutput([
         { type: 'success', content: 'Launching animated portfolio UI...' },
@@ -404,53 +426,62 @@ export function CliTerminal({ asciiArt }: CliTerminalProps) {
 
   return (
     <div
-      className="flex h-full w-full flex-col overflow-hidden bg-[#1a1b2e] font-terminal text-[#c0caf5]"
+      className="flex h-full w-full flex-col overflow-hidden bg-transparent font-terminal text-[#DCD7BA]"
       onClick={() => {
         inputRef.current?.focus();
       }}
     >
       <div
         ref={terminalRef}
-        className="flex-1 overflow-x-auto px-3 py-3 pb-[calc(5rem+env(safe-area-inset-bottom,0px))] text-xs leading-relaxed sm:px-4 sm:py-4 sm:pb-[calc(5rem+env(safe-area-inset-bottom,0px))] sm:text-sm"
+        className="flex-1 overflow-x-auto px-3 py-3 text-xs leading-relaxed sm:px-4 sm:py-4 sm:text-sm"
         style={{
           overflowY: 'auto',
           WebkitOverflowScrolling: 'touch',
-          scrollbarWidth: 'none',
-          msOverflowStyle: 'none',
           overscrollBehavior: 'contain',
           scrollPaddingBottom: 'calc(5rem + env(safe-area-inset-bottom, 0px))',
         }}
       >
-        <style
-          dangerouslySetInnerHTML={{
-            __html: `
-          ::-webkit-scrollbar {
-            display: none;
-          }
-        `,
-          }}
-        />
-
         {showBoot && (
           <div className="mb-6">
-            <div className="mt-4 space-y-1">
-              {DEVELOPER_INFO.map((line) => (
-                <p key={line} className="text-terminal-green">
-                  {line}
-                </p>
-              ))}
-            </div>
-            <div
-              className="overflow-x-auto pb-2"
-              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-            >
-              <pre
-                className="ascii-art-block w-[138ch] max-w-none whitespace-pre text-[#c0caf5]"
-                aria-hidden
-              >
-                {asciiArt}
-              </pre>
-            </div>
+            {portraitSrc ? (
+              /* neofetch-style greeting: ASCII portrait on the left, info on the right */
+              <div className="mt-2 flex flex-col gap-4 sm:flex-row sm:items-center">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={portraitSrc}
+                  alt="ASCII-art portrait of Ayush"
+                  className="w-[180px] shrink-0 rounded-md sm:w-[210px]"
+                  style={{ border: '1px solid #2A2A37' }}
+                />
+                <div className="space-y-1">
+                  {DEVELOPER_INFO.map((line) => (
+                    <p key={line} className="text-terminal-green">
+                      {line}
+                    </p>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="mt-4 space-y-1">
+                  {DEVELOPER_INFO.map((line) => (
+                    <p key={line} className="text-terminal-green">
+                      {line}
+                    </p>
+                  ))}
+                </div>
+                <div
+                  className="no-scrollbar overflow-x-auto pb-2"
+                >
+                  <pre
+                    className="ascii-art-block w-[138ch] max-w-none whitespace-pre text-[#DCD7BA]"
+                    aria-hidden
+                  >
+                    {asciiArt}
+                  </pre>
+                </div>
+              </>
+            )}
             <p className="mt-4 text-terminal-muted">— type help or resume to get started —</p>
           </div>
         )}
@@ -460,14 +491,14 @@ export function CliTerminal({ asciiArt }: CliTerminalProps) {
             key={idx}
             className={`whitespace-pre-wrap break-words ${
               line.type === 'prompt-line1'
-                ? 'text-[#9ece6a]'
+                ? 'text-[#98BB6C]'
                 : line.type === 'input'
-                  ? 'text-[#7aa2f7]'
+                  ? 'text-[#7E9CD8]'
                   : line.type === 'error'
                     ? 'text-terminal-error'
                     : line.type === 'success'
                       ? 'text-terminal-green'
-                      : 'text-[#c0caf5]'
+                      : 'text-[#DCD7BA]'
             }`}
           >
             {line.content}
@@ -475,12 +506,12 @@ export function CliTerminal({ asciiArt }: CliTerminalProps) {
         ))}
 
         <div className="mt-1">
-          <div className="whitespace-pre-wrap text-[#9ece6a]">{PROMPT_LINE1}</div>
+          <div className="whitespace-pre-wrap text-[#98BB6C]">{PROMPT_LINE1}</div>
           <div className="flex items-start">
-            <span className="shrink-0 text-[#7aa2f7]">{PROMPT_LINE2}&nbsp;</span>
+            <span className="shrink-0 text-[#7E9CD8]">{PROMPT_LINE2}&nbsp;</span>
             <div className="relative flex-1" style={{ minHeight: '1.5em' }}>
               <div className="absolute top-0 left-0 flex items-center whitespace-pre pointer-events-none w-full h-full">
-                <span className="text-[#c0caf5]">{input}</span>
+                <span className="text-[#DCD7BA]">{input}</span>
                 <span
                   className={`inline-flex items-center justify-center ${isFocused ? 'terminal-cursor' : 'bg-transparent text-terminal-autocomplete'} z-10`}
                   style={{ minWidth: '0.6em', height: '1.2em', verticalAlign: 'baseline' }}

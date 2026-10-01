@@ -113,3 +113,98 @@
     font-size: 1rem;
   }
 }
+
+/* ── Space backdrop ─────────────────────────────────────────────────────────
+   A fixed layer behind the résumé: deep sky, two star fields, a faint nebula,
+   and a grid that is only visible around the middle column and fades away
+   toward the edges. Light mode keeps the centre-focused grid on pale paper. */
+.portfolio-ui {
+  --space-sky: #f6f7fb;
+  --space-grid: rgba(15, 23, 42, 0.09);
+  --space-stars: 0;
+  --space-nebula: 0;
+}
+.portfolio-ui.dark,
+.dark .portfolio-ui {
+  --space-sky: radial-gradient(ellipse 120% 80% at 50% -10%, #141a3c 0%, #090c1c 42%, #03040a 100%);
+  --space-grid: rgba(148, 163, 255, 0.22);
+  --space-stars: 1;
+  --space-nebula: 1;
+}
+
+.portfolio-space {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background: var(--space-sky);
+}
+
+/* Small, dense stars, and a sparser layer of brighter ones that slowly twinkle. */
+.portfolio-space__stars,
+.portfolio-space__stars::after {
+  position: absolute;
+  inset: 0;
+  opacity: var(--space-stars);
+  background-image:
+    radial-gradient(1px 1px at 12% 18%, rgba(255, 255, 255, 0.9) 50%, transparent 51%),
+    radial-gradient(1px 1px at 37% 64%, rgba(255, 255, 255, 0.7) 50%, transparent 51%),
+    radial-gradient(1px 1px at 58% 31%, rgba(255, 255, 255, 0.8) 50%, transparent 51%),
+    radial-gradient(1px 1px at 73% 82%, rgba(255, 255, 255, 0.6) 50%, transparent 51%),
+    radial-gradient(1px 1px at 88% 12%, rgba(255, 255, 255, 0.85) 50%, transparent 51%),
+    radial-gradient(1px 1px at 26% 91%, rgba(255, 255, 255, 0.6) 50%, transparent 51%),
+    radial-gradient(1px 1px at 94% 53%, rgba(255, 255, 255, 0.7) 50%, transparent 51%),
+    radial-gradient(1px 1px at 4% 47%, rgba(255, 255, 255, 0.65) 50%, transparent 51%);
+  background-size: 260px 260px;
+}
+.portfolio-space__stars::after {
+  content: '';
+  background-image:
+    radial-gradient(1.6px 1.6px at 21% 34%, #ffffff 50%, transparent 51%),
+    radial-gradient(1.6px 1.6px at 67% 12%, #cfd8ff 50%, transparent 51%),
+    radial-gradient(1.6px 1.6px at 84% 71%, #ffffff 50%, transparent 51%),
+    radial-gradient(1.6px 1.6px at 45% 88%, #ffe9c7 50%, transparent 51%);
+  background-size: 520px 520px;
+  animation: portfolio-twinkle 5s ease-in-out infinite alternate;
+}
+@keyframes portfolio-twinkle {
+  from { opacity: calc(var(--space-stars) * 0.35); }
+  to { opacity: var(--space-stars); }
+}
+
+.portfolio-space__nebula {
+  position: absolute;
+  inset: -20%;
+  opacity: calc(var(--space-nebula) * 0.55);
+  background:
+    radial-gradient(38% 30% at 18% 22%, rgba(76, 86, 190, 0.45), transparent 70%),
+    radial-gradient(34% 28% at 84% 74%, rgba(138, 70, 160, 0.35), transparent 70%),
+    radial-gradient(26% 22% at 70% 12%, rgba(40, 120, 150, 0.25), transparent 70%);
+  filter: blur(40px);
+}
+
+/* The grid: drawn across the whole layer, then masked so only the middle shows. */
+.portfolio-space__grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(var(--space-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--space-grid) 1px, transparent 1px);
+  background-size: 48px 48px;
+  background-position: center top;
+  -webkit-mask-image: radial-gradient(ellipse 44% 62% at 50% 40%, #000 0%, rgba(0, 0, 0, 0.6) 45%, transparent 76%);
+  mask-image: radial-gradient(ellipse 44% 62% at 50% 40%, #000 0%, rgba(0, 0, 0, 0.6) 45%, transparent 76%);
+}
+/* A soft glow at the grid's focus, so the middle column reads as the "lit" part of the page. */
+.portfolio-space__grid::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: var(--space-nebula);
+  background: radial-gradient(ellipse 34% 40% at 50% 34%, rgba(120, 140, 255, 0.12), transparent 70%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .portfolio-space__stars::after { animation: none; }
+}

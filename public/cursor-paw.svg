@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="30" height="32" viewBox="0 0 30 32">
+  <defs><filter id="s" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="1.2" stdDeviation="1.1" flood-color="#000" flood-opacity="0.45"/></filter></defs>
+  <g filter="url(#s)" stroke="#16161D" stroke-width="1.5" stroke-linejoin="round">
+    <path d="M9.5 28.5c-2.6-2.2-4-5.3-4-9V13a2.6 2.6 0 0 1 5.2 0V7.2a2.7 2.7 0 0 1 5.4 0v1a2.7 2.7 0 0 1 5.3.6v1.6a2.6 2.6 0 0 1 4.1 2.2v7.4c0 3.4-1.300 6.400-3.700 8.500z" fill="#F2ECD6"/>
+  </g>
+  <ellipse cx="13.400" cy="11" rx="1.500" ry="2" fill="#D27E99"/>
+  <ellipse cx="18.700" cy="12.600" rx="1.400" ry="1.900" fill="#D27E99"/>
+  <ellipse cx="8.100" cy="16.400" rx="1.300" ry="1.800" fill="#D27E99"/>
+  <ellipse cx="23" cy="15.800" rx="1.200" ry="1.700" fill="#D27E99"/>
+  <path d="M15.500 17.200c2.900 0 5.300 2.200 5.300 4.600 0 1.500-1.200 2.200-2.600 1.900-1-.2-1.700-.5-2.700-.5s-1.700.3-2.700.5c-1.400.3-2.600-.4-2.600-1.900 0-2.400 2.400-4.600 5.300-4.600z" fill="#D27E99"/>
+</svg>

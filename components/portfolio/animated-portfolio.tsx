@@ -11,6 +11,7 @@ import { DATA } from "@/data_ui_portfolio/resume";
 import Link from "next/link";
 import Markdown from "react-markdown";
 import { motion } from "framer-motion";
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import Navbar from "@/components/ui_portfolio_components/navbar";
 import { TooltipProvider } from "@/components/ui_portfolio_components/ui/tooltip";
@@ -18,18 +19,28 @@ import { TooltipProvider } from "@/components/ui_portfolio_components/ui/tooltip
 const BLUR_FADE_DELAY = 0.04;
 
 export function AnimatedPortfolio() {
+  // Shown inside the desktop's Résumé window (an iframe), "Home" would load the desktop inside itself.
+  const [embedded, setEmbedded] = useState(false);
+  useEffect(() => setEmbedded(window.self !== window.top), []);
+
   return (
     <TooltipProvider delayDuration={0}>
       <motion.div
         className={cn(
-          "min-h-dvh bg-background font-sans antialiased text-foreground pb-24"
+          "relative min-h-dvh font-sans antialiased text-foreground pb-24"
         )}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.8, ease: [0.76, 0, 0.24, 1] }}
       >
-          <div className="max-w-2xl mx-auto px-4 py-8 pb-safe sm:px-6 sm:py-24">
+          {/* Space backdrop: stars and nebula, with a grid that only shows around the middle column. */}
+          <div className="portfolio-space" aria-hidden>
+            <div className="portfolio-space__nebula" />
+            <div className="portfolio-space__stars" />
+            <div className="portfolio-space__grid" />
+          </div>
+          <div className="relative z-10 max-w-2xl mx-auto px-4 py-8 pb-safe sm:px-6 sm:py-24">
             <main className="flex flex-col space-y-10">
               <section id="hero">
                 <div className="mx-auto w-full max-w-2xl space-y-8">
@@ -211,7 +222,7 @@ export function AnimatedPortfolio() {
               </section>
             </main>
           </div>
-          <Navbar />
+          <Navbar embedded={embedded} />
         </motion.div>
       </TooltipProvider>
   );
