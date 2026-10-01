@@ -5,12 +5,13 @@ export type ChatMessage = { role: 'user' | 'assistant'; content: string };
 /**
  * Asks the model through /api/ask and reports the reply as it is written.
  * Throws if no reply can be had (no key, rate limit, outage), so the caller can fall back to search.
+ * `spoken` asks for a reply written to be read out, for voice mode.
  */
-export async function streamReply(messages: ChatMessage[], onText: (text: string) => void): Promise<{ text: string; sources: Source[] }> {
+export async function streamReply(messages: ChatMessage[], onText: (text: string) => void, spoken = false): Promise<{ text: string; sources: Source[] }> {
   const res = await fetch('/api/ask', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ messages }),
+    body: JSON.stringify({ messages, spoken }),
   });
   if (!res.ok || !res.body) throw new Error(`Ask failed (${res.status})`);
 

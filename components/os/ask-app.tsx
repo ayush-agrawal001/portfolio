@@ -67,7 +67,7 @@ export function AskApp({ request }: { request: AskRequest }) {
   // In voice mode a spoken question is asked like a typed one, and its answer is read out.
   const askRef = useRef<(question: string) => void>(() => {});
   const voice = useVoice((heard) => askRef.current(heard));
-  const { hold, say } = voice;
+  const { hold, say, isOn } = voice;
 
   const ask = useCallback(async (question: string) => {
     const q = question.trim();
@@ -83,7 +83,7 @@ export function AskApp({ request }: { request: AskRequest }) {
     const finish = (answer: Answer) => {
       updateLast((t) => ({ ...t, status: 'done', answer }));
       setBusy(false);
-      say(`${answer.headline}\n${answer.body}`);
+      void say(`${answer.headline}\n${answer.body}`);
     };
 
     // Pre-written questions are answered from the page itself: no request, no tokens.
@@ -102,13 +102,14 @@ export function AskApp({ request }: { request: AskRequest }) {
         }),
         { role: 'user', content: q },
       ];
-      const { text, sources } = await streamReply(messages, (partial) => updateLast((t) => ({ ...t, text: partial })));
+      // In a voice conversation the reply is written to be said, not read.
+      const { text, sources } = await streamReply(messages, (partial) => updateLast((t) => ({ ...t, text: partial })), isOn());
       finish(replyAnswer(text, sources, q, asked));
     } catch {
       // No key, a rate limit or an outage: answer with what a search of the résumé finds instead.
       finish(searchAnswer(q, asked));
     }
-  }, [busy, hold, say]);
+  }, [busy, hold, say, isOn]);
   askRef.current = (question) => void ask(question);
 
   useEffect(() => {
@@ -307,7 +308,7 @@ export function AskApp({ request }: { request: AskRequest }) {
           ) : (
             <>
               {ASSISTANT.name} answers from Ayush’s résumé and portfolio. Questions go to an AI model to write the reply; this site doesn’t store them.
-              {voice.supported && ' Voice uses your browser’s speech service.'}
+              {voice.supported && ' In voice mode your browser’s speech service listens, and Google’s reads the answers out.'}
             </>
           )}
         </p>

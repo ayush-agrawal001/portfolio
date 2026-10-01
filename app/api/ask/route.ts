@@ -1,5 +1,6 @@
 import { PROFILE_LINKS } from '@/lib/ask/knowledge';
 import { factsFor, sourcesFor, systemPrompt } from '@/lib/ask/prompt';
+import { rateLimiter } from '@/lib/ask/rate-limit';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -35,18 +36,7 @@ function providers(): Provider[] {
   return all.filter((p): p is Provider => !!p.key);
 }
 
-// Best-effort, per-instance rate limit so a public endpoint can't be hammered.
-const WINDOW_MS = 10 * 60 * 1000;
-const MAX_REQUESTS = 30;
-const hits = new Map<string, number[]>();
-
-function isRateLimited(ip: string): boolean {
-  const now = Date.now();
-  const recent = (hits.get(ip) ?? []).filter((t) => now - t < WINDOW_MS);
-  recent.push(now);
-  hits.set(ip, recent);
-  return recent.length > MAX_REQUESTS;
-}
+const isRateLimited = rateLimiter(30, 10 * 60 * 1000);
 
 type Message = { role: 'user' | 'assistant'; content: string };
 
@@ -77,14 +67,17 @@ export async function POST(req: Request) {
   const chain = providers();
   if (!chain.length) return Response.json({ error: 'Ask Ayush has no model configured (missing OPENROUTER_API_KEY or GOOGLE_API_KEY).' }, { status: 503 });
 
-  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'local';
-  if (isRateLimited(ip)) {
+  if (isRateLimited(req)) {
     return Response.json({ error: 'Too many questions in a row. Take a breath and try again in a few minutes.' }, { status: 429 });
   }
 
   let messages: Message[] | null = null;
+  // Set in voice mode: the reply will be read out, so it should be written for the ear.
+  let spoken = false;
   try {
-    messages = parseMessages(await req.json());
+    const json: unknown = await req.json();
+    messages = parseMessages(json);
+    spoken = (json as { spoken?: unknown } | null)?.spoken === true;
   } catch {
     messages = null;
   }
@@ -92,7 +85,7 @@ export async function POST(req: Request) {
 
   // A follow-up ("and before that?") only makes sense next to the question before it.
   const topic = messages.filter((m) => m.role === 'user').slice(-2).map((m) => m.content).join(' ');
-  const payload = { stream: true, max_tokens: MAX_TOKENS, temperature: 0.2, messages: [{ role: 'system', content: systemPrompt(factsFor(topic)) }, ...messages] };
+  const payload = { stream: true, max_tokens: MAX_TOKENS, temperature: 0.2, messages: [{ role: 'system', content: systemPrompt(factsFor(topic), spoken) }, ...messages] };
 
   const encoder = new TextEncoder();
 

@@ -44,6 +44,8 @@ function stem(w: string): string {
 
 function terms(text: string): string[] {
   return normalize(text)
+    // "This website" is the portfolio itself, which is a different thing from a website Ayush built for a client.
+    .replace(/\bthis (website|site|app|page|portfolio|desktop|place)\b/g, 'thissite')
     .split(' ')
     .filter((w) => (w.length > 1 || w === 'c') && !STOP.has(w))
     .map((w) => {
