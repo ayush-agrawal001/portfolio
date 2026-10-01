@@ -87,7 +87,7 @@ export function ControlCenter({ mobile, onOpenAsk, wallpaper, onWallpaper }: Pro
             <button type="button" onClick={onOpenAsk} className="flex w-full items-start gap-3.5 px-3 py-3.5 text-left">
               <AskBadge size={36} />
               <span className="flex flex-col gap-1.5">
-                <span className="text-[13px] leading-[1.45]">Instead of reading my whole résumé, just ask me. I’m a new app.</span>
+                <span className="text-[13px] leading-[1.45]">Instead of reading Ayush’s whole résumé, just ask me. I’m Koby, his assistant.</span>
                 <span className="text-xs font-semibold" style={{ color: OS.accent }}>Open Ask Ayush →</span>
               </span>
             </button>

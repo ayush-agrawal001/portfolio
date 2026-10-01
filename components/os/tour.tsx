@@ -25,7 +25,7 @@ const STEPS: Step[] = [
     target: '[data-tour="ask-icon"]',
     perch: true,
     title: 'New: Ask Ayush',
-    body: 'My favourite. An AI that answers anything about Ayush’s work, using only his real résumé and repos. Easiest place to start.',
+    body: 'My favourite. Koby, Ayush’s assistant, lives here: ask anything about Ayush’s work and Koby looks it up in his real résumé and portfolio. Easiest place to start.',
   },
   {
     target: '[data-tour="menu"]',

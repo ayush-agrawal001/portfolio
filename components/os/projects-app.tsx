@@ -6,7 +6,7 @@ import { MONO, OS } from './theme';
 export function ProjectsApp({ onPick }: { onPick: (question: string) => void }) {
   return (
     <div className="flex h-full flex-col gap-3.5 overflow-y-auto p-[18px]" style={{ color: OS.text }}>
-      <p className="text-[13px]" style={{ color: OS.dim }}>Pick a project and Ask Ayush tells you the story behind it.</p>
+      <p className="text-[13px]" style={{ color: OS.dim }}>Pick a project and Koby tells you the story behind it.</p>
       <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
         {PROJECTS.map((p) => (
           <button

@@ -2,15 +2,22 @@
 
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { EXAMPLES, FAQ, type Source } from '@/lib/ask/knowledge';
-import { exampleAnswer, findExample, parseAnswer, suggestFollowups, visiblePart, type Answer } from '@/lib/ask/parse';
-import { ArrowRightIcon, AskBadge } from './icons';
+import { exampleAnswer, findExample, replyAnswer, splitReply, type Answer } from '@/lib/ask/answers';
+import { ASSISTANT, EXAMPLES, FAQ, type Source } from '@/lib/ask/knowledge';
+import { answer as searchAnswer } from '@/lib/ask/search';
+import { streamReply, type ChatMessage } from '@/lib/ask/stream';
+import { ArrowRightIcon, AskBadge, MicIcon } from './icons';
 import { DISPLAY, MONO, OS } from './theme';
+import { useVoice } from './use-voice';
 
-type AssistantTurn = { role: 'assistant'; text: string; status: 'streaming' | 'done' | 'error'; answer?: Answer };
+/** `text` is a model reply while it is still being written; `answer` is the finished thing. */
+type AssistantTurn = { role: 'assistant'; status: 'thinking' | 'done'; text?: string; answer?: Answer };
 type Turn = { role: 'user'; text: string } | AssistantTurn;
 
 export type AskRequest = { question: string; id: number } | null;
+
+/** How much of the chat (questions and answers) is sent along with a new question. */
+const HISTORY_TURNS = 6;
 
 /** Category chip for each example question, in the same order as EXAMPLES. */
 const TAGS: { tag: string; color: string }[] = [
@@ -24,7 +31,7 @@ const TAGS: { tag: string; color: string }[] = [
   { tag: 'hire', color: OS.green },
 ];
 
-/** The hanko seal is Ask Ayush's face; it gently "breathes" while an answer is being written. */
+/** The hanko seal is Koby's face; it gently "breathes" while an answer is being written. */
 function Orb({ size = 72, busy = false }: { size?: number; busy?: boolean }) {
   const reduce = useReducedMotion();
   return (
@@ -57,80 +64,52 @@ export function AskApp({ request }: { request: AskRequest }) {
       return [...prev.slice(0, -1), fn(last)];
     });
 
+  // In voice mode a spoken question is asked like a typed one, and its answer is read out.
+  const askRef = useRef<(question: string) => void>(() => {});
+  const voice = useVoice((heard) => askRef.current(heard));
+  const { hold, say } = voice;
+
   const ask = useCallback(async (question: string) => {
     const q = question.trim();
     if (!q || busy) return;
     setDraft('');
+    hold();
     const history = turnsRef.current;
     // Follow-ups skip anything already asked in this chat.
     const asked = [...history.filter((t) => t.role === 'user').map((t) => t.text), q];
+    setTurns([...history, { role: 'user', text: q }, { role: 'assistant', status: 'thinking' }]);
+    setBusy(true);
+
+    const finish = (answer: Answer) => {
+      updateLast((t) => ({ ...t, status: 'done', answer }));
+      setBusy(false);
+      say(`${answer.headline}\n${answer.body}`);
+    };
 
     // Pre-written questions are answered from the page itself: no request, no tokens.
     const example = findExample(q);
     if (example) {
-      const { answer, text } = exampleAnswer(example, asked);
-      setTurns([...history, { role: 'user', text: q }, { role: 'assistant', text: '', status: 'streaming' }]);
       // A short "thinking" beat so pre-written answers feel as alive as streamed ones.
-      setBusy(true);
-      setTimeout(() => {
-        updateLast((t) => ({ ...t, text, status: 'done', answer }));
-        setBusy(false);
-      }, 650);
+      setTimeout(() => finish(exampleAnswer(example, asked)), 650);
       return;
     }
 
-    setTurns([...history, { role: 'user', text: q }, { role: 'assistant', text: '', status: 'streaming' }]);
-    setBusy(true);
     try {
-      const messages = [...history, { role: 'user' as const, text: q }]
-        .filter((t) => t.role === 'user' || t.status === 'done')
-        .map((t) => ({ role: t.role, content: t.text }));
-      const res = await fetch('/api/ask', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages }),
-      });
-      if (!res.ok || !res.body) {
-        const err = await res.json().catch(() => null);
-        throw new Error(err?.error ?? 'Something went wrong. Try again in a moment.');
-      }
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-      let text = '';
-      for (;;) {
-        const { value, done } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() ?? '';
-        for (const line of lines) {
-          if (!line.trim()) continue;
-          const e = JSON.parse(line) as { t: string; v?: string };
-          if (e.t === 'delta') {
-            text += e.v ?? '';
-            const current = text;
-            updateLast((t) => ({ ...t, text: current }));
-          } else if (e.t === 'reset') {
-            text = '';
-            updateLast((t) => ({ ...t, text: '' }));
-          } else if (e.t === 'refusal') {
-            throw new Error("I can't help with that one. Ask me about Ayush's work instead?");
-          } else if (e.t === 'error') {
-            throw new Error(e.v ?? 'Something went wrong.');
-          }
-        }
-      }
-      const final = text;
-      // Suggest only pre-written questions next, so following up is free.
-      updateLast((t) => ({ ...t, text: final, status: 'done', answer: { ...parseAnswer(final), followups: suggestFollowups(`${q} ${final}`, asked) } }));
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Something went wrong.';
-      updateLast((t) => ({ ...t, text: message, status: 'error' }));
-    } finally {
-      setBusy(false);
+      const messages: ChatMessage[] = [
+        ...history.slice(-HISTORY_TURNS).flatMap((t): ChatMessage[] => {
+          if (t.role === 'user') return [{ role: 'user', content: t.text }];
+          return t.answer ? [{ role: 'assistant', content: `${t.answer.headline}\n\n${t.answer.body}`.trim() }] : [];
+        }),
+        { role: 'user', content: q },
+      ];
+      const { text, sources } = await streamReply(messages, (partial) => updateLast((t) => ({ ...t, text: partial })));
+      finish(replyAnswer(text, sources, q, asked));
+    } catch {
+      // No key, a rate limit or an outage: answer with what a search of the résumé finds instead.
+      finish(searchAnswer(q, asked));
     }
-  }, [busy]);
+  }, [busy, hold, say]);
+  askRef.current = (question) => void ask(question);
 
   useEffect(() => {
     if (request) void ask(request.question);
@@ -150,21 +129,30 @@ export function AskApp({ request }: { request: AskRequest }) {
 
   const empty = turns.length === 0;
   const last = turns[turns.length - 1];
-  const thinking = last?.role === 'assistant' && last.status === 'streaming';
+  const thinking = last?.role === 'assistant' && last.status === 'thinking';
   const followups = last?.role === 'assistant' && last.status === 'done' ? last.answer?.followups ?? [] : [];
+  const talking = voice.phase !== 'off';
+  // The mic button starts a conversation, cuts Koby off while it is speaking, and otherwise ends the conversation.
+  const mic = { off: voice.start, speaking: voice.interrupt, listening: voice.stop, thinking: voice.stop }[voice.phase];
+  const voiceStatus = {
+    off: '',
+    listening: 'listening · tap the mic to end',
+    thinking: 'thinking…',
+    speaking: 'speaking · tap the mic to interrupt',
+  }[voice.phase];
 
   return (
     <div className="flex h-full min-h-0 flex-col" style={{ color: OS.text }}>
       {!empty && (
         <div className="flex h-12 shrink-0 items-center justify-between border-b px-4 sm:px-6" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
           <span className="flex items-center gap-2.5 text-sm font-medium">
-            <Orb size={22} busy={thinking} />
-            Ask Ayush
-            <span className="text-xs font-normal" style={{ color: OS.muted, fontFamily: MONO }}>· reads resume.md + github</span>
+            <Orb size={22} busy={thinking || voice.phase === 'speaking'} />
+            {ASSISTANT.name}
+            <span className="text-xs font-normal" style={{ color: OS.muted, fontFamily: MONO }}>· {ASSISTANT.role.toLowerCase()}</span>
           </span>
           <button
             type="button"
-            onClick={() => setTurns([])}
+            onClick={() => { voice.stop(); setTurns([]); }}
             disabled={busy}
             className="rounded-lg px-3 py-1.5 text-xs transition-colors hover:bg-white/5 disabled:opacity-40"
             style={{ color: OS.dim, border: `1px solid ${OS.tileHi}` }}
@@ -185,10 +173,10 @@ export function AskApp({ request }: { request: AskRequest }) {
                     Ask me about Ayush.
                   </h1>
                   <p className="max-w-[520px] text-[15px] leading-relaxed" style={{ color: OS.dim }}>
-                    Hi, I’m Ayush. This little app has read my résumé and repos, so it can answer for me while I’m busy
-                    breaking something in production. If it doesn’t know, it’ll say so.
+                    Hi, I’m {ASSISTANT.name}, {ASSISTANT.role}. I keep his résumé and portfolio on file, so I can answer for him
+                    while he’s busy breaking something in production. If I don’t know, I’ll say so.
                   </p>
-                  <span className="text-[13px] italic" style={{ color: OS.muted }}>— A.A.</span>
+                  <span className="text-[13px] italic" style={{ color: OS.muted }}>— {ASSISTANT.name}</span>
                 </div>
               </div>
 
@@ -275,16 +263,31 @@ export function AskApp({ request }: { request: AskRequest }) {
             <input
               ref={inputRef}
               id="ask-input"
-              value={draft}
+              // While listening, the box shows what has been heard so far.
+              value={voice.interim || draft}
+              readOnly={!!voice.interim}
               onChange={(e) => setDraft(e.target.value)}
               onFocus={() => setFocused(true)}
               onBlur={() => setFocused(false)}
-              placeholder={empty ? EXAMPLES[hint].q : 'Ask a follow-up…'}
+              placeholder={voice.phase === 'listening' ? 'Listening…' : empty ? EXAMPLES[hint].q : 'Ask a follow-up…'}
               maxLength={600}
               autoComplete="off"
               className="h-full min-w-0 flex-1 bg-transparent text-[15px] outline-none placeholder:text-[#727169]"
             />
             <kbd className="hidden rounded border px-1.5 py-0.5 text-[10px] sm:block" style={{ borderColor: OS.tileHi, color: OS.muted, fontFamily: MONO }}>enter</kbd>
+            {voice.supported && (
+              <button
+                type="button"
+                onClick={mic}
+                aria-label={talking ? 'End voice conversation' : 'Talk to Koby'}
+                aria-pressed={talking}
+                title={talking ? 'End voice conversation' : 'Talk to Koby'}
+                className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition-colors ${voice.phase === 'listening' ? 'animate-pulse' : ''}`}
+                style={talking ? { background: voice.phase === 'speaking' ? OS.purple : OS.red, borderColor: 'transparent', color: OS.panelDeep } : { borderColor: OS.tileHi, color: OS.dim }}
+              >
+                <MicIcon size={18} />
+              </button>
+            )}
             <button
               type="submit"
               disabled={busy || !draft.trim()}
@@ -296,8 +299,17 @@ export function AskApp({ request }: { request: AskRequest }) {
             </button>
           </form>
         </div>
-        <p className="mx-auto mt-2 max-w-[720px] text-center text-[11px]" style={{ color: OS.muted }}>
-          AI answers from Ayush’s résumé and repos. Nothing you type is stored.
+        <p className="mx-auto mt-2 max-w-[720px] text-center text-[11px]" style={{ color: OS.muted }} aria-live="polite">
+          {talking ? (
+            <span style={{ fontFamily: MONO }}>voice · {voiceStatus}</span>
+          ) : voice.error ? (
+            <span style={{ color: OS.red }}>{voice.error}</span>
+          ) : (
+            <>
+              {ASSISTANT.name} answers from Ayush’s résumé and portfolio. Questions go to an AI model to write the reply; this site doesn’t store them.
+              {voice.supported && ' Voice uses your browser’s speech service.'}
+            </>
+          )}
         </p>
       </div>
     </div>
@@ -321,27 +333,25 @@ function SourceChip({ source, n }: { source: Source; n: number }) {
 }
 
 function AssistantMessage({ turn, isLast }: { turn: AssistantTurn; isLast: boolean }) {
-  if (turn.status === 'error') {
-    return (
-      <div className="flex gap-3">
-        <Orb size={32} />
-        <p className="rounded-xl border px-4 py-3 text-sm" style={{ borderColor: 'rgba(228,104,118,0.3)', background: 'rgba(228,104,118,0.08)', color: '#FF5D62' }}>
-          {turn.text}
-        </p>
-      </div>
-    );
-  }
-  const streaming = turn.status === 'streaming';
-  const answer = turn.answer ?? parseAnswer(visiblePart(turn.text));
+  const writing = turn.status === 'thinking' && !!turn.text;
+  const answer: Answer | undefined = turn.answer ?? (turn.text ? { ...splitReply(turn.text), sources: [], followups: [] } : undefined);
   return (
     <div className="flex gap-3" aria-live={isLast ? 'polite' : undefined}>
-      <Orb size={32} busy={streaming} />
+      <Orb size={32} busy={turn.status === 'thinking'} />
       <div className="flex min-w-0 flex-1 flex-col gap-2 pt-1">
-        {streaming && !turn.text && <span className="os-shimmer text-sm" style={{ fontFamily: MONO }}>reading resume.md…</span>}
-        {answer.headline && <p className="text-[19px] leading-snug tracking-tight" style={{ fontFamily: DISPLAY, fontWeight: 600 }}>{answer.headline}</p>}
-        {answer.body && <p className="whitespace-pre-line text-[15px] leading-relaxed" style={{ color: '#DCD7BA' }}>{answer.body}</p>}
-        {streaming && turn.text && <span className="inline-block h-4 w-2 animate-pulse rounded-sm" style={{ background: OS.purple }} />}
-        {!streaming && answer.sources.length > 0 && (
+        {!answer && <span className="os-shimmer text-sm" style={{ fontFamily: MONO }}>{ASSISTANT.name.toLowerCase()} is checking resume.md…</span>}
+        {/* A searched passage is quoted as it stands, so say so: it may not answer the exact question. */}
+        {answer?.matched && <span className="text-[11px]" style={{ color: OS.muted, fontFamily: MONO }}>closest match on file</span>}
+        {answer?.headline && <p className="text-[19px] leading-snug tracking-tight" style={{ fontFamily: DISPLAY, fontWeight: 600 }}>{answer.headline}</p>}
+        {answer?.body && <p className="whitespace-pre-line break-words text-[15px] leading-relaxed" style={{ color: '#DCD7BA' }}>{answer.body}</p>}
+        {answer?.related?.map((r) => (
+          <div key={r.headline} className="flex flex-col gap-1 pt-2">
+            <p className="text-[15px] font-semibold leading-snug">{r.headline}</p>
+            <p className="whitespace-pre-line break-words text-[15px] leading-relaxed" style={{ color: '#DCD7BA' }}>{r.body}</p>
+          </div>
+        ))}
+        {writing && <span className="inline-block h-4 w-2 animate-pulse rounded-sm" style={{ background: OS.purple }} />}
+        {answer && answer.sources.length > 0 && (
           <div className="flex flex-wrap gap-1.5 pt-1">
             {answer.sources.map((s, i) => <SourceChip key={i} source={s} n={i + 1} />)}
           </div>

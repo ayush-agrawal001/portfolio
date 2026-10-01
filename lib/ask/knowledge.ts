@@ -1,4 +1,6 @@
 import { RESUME } from '@/data_cli_terminal/resume';
+import { DATA } from '@/data_ui_portfolio/resume';
+import { WRITEUPS } from './writeups';
 
 /** Public links for each project, keyed by RESUME.projects[].id. */
 export const PROJECT_LINKS: Record<string, { github?: string; demo?: string; video?: string }> = {
@@ -33,60 +35,6 @@ export const PROFILE_LINKS = {
   email: RESUME.contact.email,
 };
 
-/** The résumé rendered as plain text: the only facts the chatbot may use. */
-function resumeAsText(): string {
-  const out: string[] = [];
-  out.push(`Name: ${RESUME.name}`);
-  out.push(`Email: ${RESUME.contact.email}`);
-  out.push(`Website: ${RESUME.contact.websiteUrl}`);
-  out.push(`GitHub: ${PROFILE_LINKS.github}`);
-  out.push(`LinkedIn: ${PROFILE_LINKS.linkedin}`);
-  out.push(`X / Twitter: ${PROFILE_LINKS.x}`);
-
-  out.push('', '## Work experience');
-  for (const w of RESUME.work) {
-    out.push(`### ${w.title} at ${w.company} (${w.period})`);
-    for (const b of w.bullets) out.push(`- ${b}`);
-  }
-
-  out.push('', '## Education');
-  for (const e of RESUME.education) out.push(`- ${e.degree}, ${e.school} (${e.period})`);
-
-  out.push('', '## Projects');
-  for (const p of RESUME.projects) {
-    const links = PROJECT_LINKS[p.id] ?? {};
-    out.push(`### ${p.name} (${p.date})`);
-    for (const b of p.bullets) out.push(`- ${b}`);
-    if (links.github) out.push(`- GitHub: ${links.github}`);
-    if (links.demo) out.push(`- Live demo: ${links.demo}`);
-    if (links.video) out.push(`- Demo video: ${links.video}`);
-  }
-
-  out.push('', '## Credentials');
-  for (const c of RESUME.credentials) out.push(`- ${c.name} (${c.period}): ${c.note}`);
-
-  out.push('', '## Skills');
-  for (const [group, items] of Object.entries(RESUME.skills)) out.push(`- ${group}: ${items.join(', ')}`);
-
-  return out.join('\n');
-}
-
-export const SYSTEM_PROMPT = `You are "Ask Ayush", the chatbot on Ayush Agrawal's portfolio website. Visitors (often recruiters, founders and other developers) ask you questions about Ayush, and you answer them.
-
-Voice: warm, witty and brief, like a friend who knows Ayush's work well. A light joke is welcome; never at the visitor's expense. Refer to Ayush in the third person.
-
-Facts: use ONLY the résumé below. Never invent jobs, dates, numbers, clients, skills, opinions or links. If the answer is not in the résumé, say you don't know and suggest emailing Ayush at ${RESUME.contact.email}. Politely decline questions that have nothing to do with Ayush or his work, and do not share his phone number.
-
-Format every reply exactly like this:
-1. One short, direct headline sentence that answers the question.
-2. A blank line, then one or two short paragraphs of detail (under 90 words total). Plain text, no headings, no bullet lists, no markdown links.
-3. A line containing only ---
-4. A line starting "sources:" listing up to three sources separated by " | ". Each source is "résumé: <section name>" or a full URL copied from the résumé.
-
-<resume>
-${resumeAsText()}
-</resume>`;
-
 export type Source = { kind: string; label: string; href?: string };
 
 export type Example = {
@@ -102,9 +50,155 @@ export type Example = {
 
 const EMAIL = RESUME.contact.email;
 const RESUME_SOURCE = (label: string): Source => ({ kind: 'résumé', label });
+const PORTFOLIO_SOURCE: Source = { kind: 'this site', label: 'Portfolio', href: '/portfolio' };
+
+/** One fact from the résumé or portfolio, shown word for word when a question matches it. */
+export type Passage = {
+  id: string;
+  title: string;
+  text: string;
+  sources: Source[];
+  /** Extra words a visitor might use for this fact. Searched, never shown. */
+  aliases?: string[];
+};
+
+const host = (url: string) => new URL(url).hostname.replace(/^www\./, '');
+const lastSegment = (url: string) => new URL(url).pathname.split('/').filter(Boolean).pop() ?? host(url);
+const bullets = (items: readonly string[]) => items.map((b) => `• ${b}`);
+const key = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+const PROJECT_ALIASES: Record<string, string[]> = {
+  chaingenie: ['telegram bot'],
+  'cds-rwa': ['cds', 'rwa'],
+  zenqor: ['freelance', 'client'],
+  'invoice-automation': ['invoice robot', 'billing'],
+  'sol-wallet': ['vault', 'wallet'],
+  videocall: ['video call'],
+};
 
 /**
- * Hand-written answers, so they show instantly and never call the model.
+ * Everything Ask Ayush can look up, built from the résumé data and the portfolio page's data.
+ * The phone number is deliberately left out. Edit those data files (or writeups.ts) to change an answer.
+ */
+function buildPassages(): Passage[] {
+  const out: Passage[] = [];
+
+  out.push({
+    id: 'about',
+    title: 'Ayush, in his own words',
+    text: `“${DATA.summary}”`,
+    sources: [PORTFOLIO_SOURCE],
+    aliases: ['bio', 'summary', 'introduction', 'background', 'overview', 'himself'],
+  });
+
+  out.push({
+    id: 'location',
+    title: `Based in ${DATA.location}`,
+    text: DATA.work.map((w) => `${w.company}: ${w.location}`).join('\n'),
+    sources: [PORTFOLIO_SOURCE],
+    aliases: ['location', 'remote', 'onsite', 'hybrid', 'office'],
+  });
+
+  for (const w of RESUME.work) {
+    const extra = DATA.work.find((d) => key(d.company) === key(w.company));
+    out.push({
+      id: `work-${key(w.company)}`,
+      title: `${w.title} at ${w.company}`,
+      text: [extra ? `${w.period} · ${extra.location}` : w.period, ...bullets(w.bullets)].join('\n'),
+      sources: [RESUME_SOURCE(`${w.title}, ${w.company}`), ...(extra ? [{ kind: 'website', label: host(extra.href), href: extra.href }] : [])],
+      aliases: ['work', 'experience', 'years', 'duration'],
+    });
+  }
+
+  RESUME.education.forEach((e, i) => {
+    const extra = DATA.education[i];
+    out.push({
+      id: `education-${i}`,
+      title: e.degree,
+      text: `${e.school}\n${e.period}`,
+      sources: [RESUME_SOURCE('Education'), ...(extra ? [{ kind: 'website', label: host(extra.href), href: extra.href }] : [])],
+      aliases: ['education'],
+    });
+  });
+
+  for (const p of RESUME.projects) {
+    const extra = DATA.projects.find((d) => key(d.title) === key(p.name));
+    const links = PROJECT_LINKS[p.id] ?? {};
+    const extraLinks: readonly { type: string; href: string }[] = extra?.links ?? [];
+    const sources: Source[] = [
+      ...(links.github ? [{ kind: 'github', label: lastSegment(links.github), href: links.github }] : []),
+      ...(links.demo ? [{ kind: 'live', label: host(links.demo), href: links.demo }] : []),
+      ...(links.video ? [{ kind: 'video', label: 'Demo on YouTube', href: links.video }] : []),
+      // Links the portfolio page has and PROJECT_LINKS does not (e.g. a launch post).
+      ...extraLinks
+        .filter((l) => !['github', 'website'].includes(l.type.toLowerCase()))
+        .map((l) => ({ kind: l.type.toLowerCase(), label: host(l.href), href: l.href })),
+    ];
+    out.push({
+      id: `project-${p.id}`,
+      title: `${p.name} · ${p.date}`,
+      text: [...bullets(p.bullets), ...(extra ? [`Tech: ${extra.technologies.join(', ')}`] : [])].join('\n'),
+      sources: sources.slice(0, 3),
+      aliases: ['project', ...(PROJECT_ALIASES[p.id] ?? [])],
+    });
+  }
+
+  for (const c of RESUME.credentials) {
+    const extra = DATA.credentials.find((d) => key(d.title) === key(c.name));
+    const extraLinks: readonly { title: string; href: string }[] = extra?.links ?? [];
+    out.push({
+      id: `credential-${key(c.name).slice(0, 12)}`,
+      title: `${c.name} · ${c.period}`,
+      text: c.note,
+      sources: [
+        RESUME_SOURCE('Credentials'),
+        ...extraLinks.map((l) => ({ kind: l.title.toLowerCase(), label: host(l.href) === 'github.com' ? lastSegment(l.href) : host(l.href), href: l.href })),
+      ],
+      aliases: ['credential'],
+    });
+  }
+
+  const listed = Object.values(RESUME.skills).flat().map(key);
+  for (const [group, items] of Object.entries(RESUME.skills)) {
+    out.push({
+      id: `skills-${key(group)}`,
+      title: `Skills: ${group}`,
+      text: items.join(', '),
+      sources: [RESUME_SOURCE(`Skills: ${group}`)],
+      aliases: ['skill'],
+    });
+  }
+  // Skills the portfolio page lists and the résumé does not ("Tailwind" counts as "Tailwind CSS").
+  const unlisted = DATA.skills.filter((s) => !listed.some((l) => l.startsWith(key(s))));
+  if (unlisted.length) {
+    out.push({ id: 'skills-portfolio', title: 'Skills: also on the portfolio', text: unlisted.join(', '), sources: [PORTFOLIO_SOURCE], aliases: ['skill'] });
+  }
+
+  out.push({
+    id: 'contact',
+    title: `Email ${EMAIL}`,
+    text: [`GitHub: ${PROFILE_LINKS.github}`, `LinkedIn: ${PROFILE_LINKS.linkedin}`, `X: ${PROFILE_LINKS.x}`, `Website: ${PROFILE_LINKS.website}`].join('\n'),
+    sources: [
+      { kind: 'email', label: EMAIL, href: `mailto:${EMAIL}` },
+      { kind: 'github', label: 'ayush-agrawal001', href: PROFILE_LINKS.github },
+      { kind: 'linkedin', label: 'Ayush Agrawal', href: PROFILE_LINKS.linkedin },
+    ],
+    aliases: ['contact', 'social', 'twitter'],
+  });
+
+  for (const w of WRITEUPS) {
+    w.text.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean).forEach((text, i) => {
+      out.push({ id: `writeup-${w.projectId}-${i}`, title: w.title, text, sources: [w.source], aliases: ['project'] });
+    });
+  }
+
+  return out;
+}
+
+export const PASSAGES: Passage[] = buildPassages();
+
+/**
+ * Hand-written answers, shown as they are when a visitor asks one of these questions.
  * EXAMPLES are the questions listed on the start screen; FAQ and PROJECT_FAQ below cover the rest
  * of what visitors are steered towards (chips, follow-ups, the Projects app, the app menu).
  */
@@ -343,7 +437,58 @@ export const PROJECT_FAQ: Example[] = [
   },
 ];
 
-export type ProjectCard = { name: string; tag: string; question: string; color: string; initials: string; folder: string; desc: string };
+/** Who answers in the Ask Ayush window. */
+export const ASSISTANT = { name: 'Koby', role: 'Ayush’s assistant' };
+
+/**
+ * Questions about Koby rather than about Ayush, plus small talk. Koby speaks in the first person:
+ * warm, brief, a little dry, and honest about what it is (the model's voice is set in prompt.ts).
+ * These are answered when typed but never offered as follow-ups.
+ */
+export const KOBY_FAQ: Example[] = [
+  {
+    q: 'Who are you?',
+    alt: ['What are you?', 'What is your name?', 'Who is Koby?', 'Who is this?', 'Who am I talking to?', 'Introduce yourself', 'Tell me about yourself', 'Tell me about Koby'],
+    a: `I’m ${ASSISTANT.name}, ${ASSISTANT.role}.`,
+    more: 'I keep his résumé and portfolio on file and answer questions about his work while he’s off building things. I’m on his side, obviously, but I only repeat what’s actually written down.',
+    sources: [],
+    next: ['What is this?', 'Who is Ayush?', 'What has he built?'],
+  },
+  {
+    q: 'What is this?',
+    alt: ['What is this app?', 'What is this site?', 'What is this website?', 'What is this place?', 'What can you do?', 'What do you do?', 'What can I ask?', 'What can I ask you?', 'How does this work?', 'How do you work?', 'Help', 'Who built this?', 'Who made this?', 'Did he build this?', 'Did he build this site?', 'Did he build this website?'],
+    a: 'Ayush’s portfolio, dressed up as a tiny desktop he built himself. This window is where you ask me about him.',
+    more: 'Type a question about his work, projects, skills or how to reach him. I answer from his résumé and portfolio and nothing else. If it isn’t in there, I’ll tell you instead of guessing.',
+    sources: [{ kind: 'this site', label: 'Résumé', href: '/portfolio' }],
+    next: ['What is his work experience?', 'What has he built?', 'What is his stack?'],
+  },
+  {
+    q: 'Are you an AI?',
+    alt: ['Are you AI?', 'Is this AI?', 'Is this an AI?', 'Are you a bot?', 'Are you a robot?', 'Are you a chatbot?', 'Are you real?', 'Are you human?', 'Are you a human?', 'Are you a person?', 'Are you ChatGPT?', 'Are you Claude?', 'Are you an LLM?'],
+    a: 'Partly. Some of me is Ayush’s own writing, the rest is an AI on a short leash.',
+    more: 'The common questions have answers Ayush wrote himself. Anything else goes to an AI model that has been handed his résumé and portfolio and told to stick to them, so it won’t help with your homework. If something isn’t on file, I say so.',
+    sources: [],
+    next: ['What is this?', 'Who is Ayush?', 'How do I hire him?'],
+  },
+  {
+    q: 'Hello',
+    alt: ['Hi', 'Hey', 'Yo', 'Sup', 'Hi there', 'Hello there', 'Koby', 'Hello Koby', 'Good morning', 'Good afternoon', 'Good evening'],
+    a: `Hello! ${ASSISTANT.name} here, ${ASSISTANT.role}.`,
+    more: 'Ask me about his work, his projects, his stack or how to hire him. I’ve got the résumé open.',
+    sources: [],
+    next: ['Who is Ayush?', 'What is his work experience?', 'What has he built?'],
+  },
+  {
+    q: 'Thanks',
+    alt: ['Thank you', 'Thanks Koby', 'Thank you Koby', 'Thx', 'Cheers', 'Great, thanks', 'Ok thanks'],
+    a: 'Any time.',
+    more: `If you liked what you saw, the next step is an email to ${EMAIL}. I’ll put in a good word.`,
+    sources: [{ kind: 'email', label: EMAIL, href: `mailto:${EMAIL}` }],
+    next: ['How do I hire him?', 'Is he open to work?', 'Where can I see his résumé?'],
+  },
+];
+
+export type ProjectCard ={ name: string; tag: string; question: string; color: string; initials: string; folder: string; desc: string };
 
 export const PROJECTS: ProjectCard[] = [
   { name: 'Trench terminal', folder: 'trench-terminal', desc: 'Trading terminal · work', tag: 'work · hyperliquid', question: 'What did he build at Trench?', color: '#98BB6C', initials: 'TT' },
