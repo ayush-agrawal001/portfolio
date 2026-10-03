@@ -16,8 +16,8 @@ import { Tour, TOUR_KEY } from './tour';
 import { BAR_H, DOCK_SPACE, OS, UI, WALLPAPERS, type AppId } from './theme';
 import { WindowFrame, type Rect } from './window-frame';
 
-const TITLES: Record<AppId, string> = { ask: 'Ask Ayush', terminal: 'Terminal', projects: 'Projects', music: 'The Smiths', resume: 'Résumé' };
-const NONE: Record<AppId, boolean> = { ask: false, terminal: false, projects: false, music: false, resume: false };
+const TITLES: Record<AppId, string> = { ask: 'Ask Ayush', terminal: 'Terminal', projects: 'Projects', music: 'The Smiths', resume: 'Résumé', threed: '3D Portfolio' };
+const NONE: Record<AppId, boolean> = { ask: false, terminal: false, projects: false, music: false, resume: false, threed: false };
 // v2: the samurai wallpaper became the default, so earlier saved picks are dropped.
 const WALLPAPER_KEY = 'ayush-os-wallpaper-v2';
 
@@ -48,6 +48,7 @@ function defaultRects(): Record<AppId, Rect> {
   const aw = Math.min(900, space - 24);
   const ah = Math.min(760, room);
   return {
+    threed: { x: 20, y: top, w: Math.max(280, vw - 40), h: room },
     terminal: { x: Math.max(420, Math.round(vw * 0.3)), y: vh - DOCK_SPACE - th, w: Math.max(tw, 460), h: th },
     projects: { x: Math.round((vw - pw) / 2), y: top + Math.round((room - ph) / 2), w: pw, h: ph },
     ask: { x: Math.max(12, Math.round((space - aw) / 2)), y: top, w: aw, h: ah },
@@ -69,7 +70,7 @@ export function Desktop({ asciiArt }: { asciiArt: string }) {
   const [open, setOpen] = useState<Record<AppId, boolean>>(NONE);
   const [minimized, setMinimized] = useState<Record<AppId, boolean>>(NONE);
   const [zoomed, setZoomed] = useState<Record<AppId, boolean>>(NONE);
-  const [order, setOrder] = useState<AppId[]>(['music', 'terminal', 'projects', 'resume', 'ask']);
+  const [order, setOrder] = useState<AppId[]>(['music', 'terminal', 'projects', 'resume', 'threed', 'ask']);
   // The Music app starts as a mini player in the corner; its Dock icon opens the full window.
   const [musicMini, setMusicMini] = useState(true);
   const [launcherOpen, setLauncherOpen] = useState(false);
@@ -157,6 +158,7 @@ export function Desktop({ asciiArt }: { asciiArt: string }) {
       if (app === 'ask' || mobile) setCCOpen(false);
       if (app === 'ask') setAskSeen(true);
       if (app === 'music') setMusicMini(false);
+      if (app === 'threed') setZoomed((z) => ({ ...z, threed: true }));
     },
     [focus, mobile],
   );
@@ -181,8 +183,8 @@ export function Desktop({ asciiArt }: { asciiArt: string }) {
 
   const wallpaper = WALLPAPERS.find((w) => w.id === wallpaperId) ?? WALLPAPERS[0];
   const miniMusic = musicMini && !mobile;
-  // The mini player floats above other windows: YouTube's player must not be covered while it plays.
-  const z = (app: AppId) => (app === 'music' && miniMusic ? 56 : 10 + order.indexOf(app));
+  // The mini player floats while playing; it pauses behind the immersive 3D app.
+  const z = (app: AppId) => (app === 'music' && miniMusic && !(open.threed && !minimized.threed) ? 56 : 10 + order.indexOf(app));
   const visible = (app: AppId) => open[app] && !minimized[app];
   const activeApp = [...order].reverse().find((a) => visible(a) && !(a === 'music' && miniMusic));
   const nothingOpen = !activeApp;
@@ -258,7 +260,7 @@ export function Desktop({ asciiArt }: { asciiArt: string }) {
 
         {open.music && (
           <WindowFrame key="music" {...frame('music')} background="rgba(18,18,18,0.92)">
-            <MusicApp mini={miniMusic} suspended={minimized.music} onToggleMini={() => setMusicMini((m) => !m)} />
+            <MusicApp mini={miniMusic} suspended={minimized.music || visible('threed')} onToggleMini={() => setMusicMini((m) => !m)} />
           </WindowFrame>
         )}
 
@@ -266,6 +268,13 @@ export function Desktop({ asciiArt }: { asciiArt: string }) {
           <WindowFrame key="resume" {...frame('resume')} background="#05060D">
             {/* The résumé is its own page (/portfolio), shown here in a window instead of leaving the desktop. */}
             <iframe src="/portfolio" title="Ayush Agrawal's résumé" className="h-full w-full border-0" style={{ background: '#05060D' }} />
+          </WindowFrame>
+        )}
+
+        {open.threed && (
+          <WindowFrame key="threed" {...frame('threed')} subtitle="One Thread" background="#07070b">
+            {/* Mounted only on launch: no scene imports, hidden iframe, or route prefetch on the desktop. */}
+            <iframe src="/threedportfolio" title="Ayush Agrawal's 3D portfolio" className="h-full w-full border-0" allow="autoplay; fullscreen" allowFullScreen style={{ background: '#07070b' }} />
           </WindowFrame>
         )}
 

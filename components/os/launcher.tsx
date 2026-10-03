@@ -19,6 +19,7 @@ type LauncherApp = {
 const APPS: LauncherApp[] = [
   { name: 'Ask Ayush', glyph: '問', fg: OS.red, isNew: true, open: 'ask' },
   { name: 'Projects', glyph: '▤', fg: OS.cyan, open: 'projects' },
+  { name: '3D Portfolio', glyph: '◇', fg: OS.red, open: 'threed' },
   { name: 'Terminal (zsh)', glyph: '>_', fg: OS.green, open: 'terminal' },
   { name: 'The Smiths', glyph: '♪', fg: OS.green, open: 'music' },
   { name: 'Résumé', glyph: 'cv', fg: OS.orange, open: 'resume' },
@@ -91,7 +92,7 @@ export function Launcher({ mobile, onOpen, onAsk, onClose }: Props) {
         </div>
       )}
 
-      <div className={`flex shrink-0 flex-col gap-1.5 px-3 py-3.5 ${mobile ? 'w-full' : 'w-[300px]'}`}>
+      <div className={`flex shrink-0 flex-col gap-1.5 overflow-y-auto px-3 py-3.5 ${mobile ? 'w-full' : 'w-[300px]'}`}>
         <form onSubmit={onSubmit}>
           <label htmlFor="launcher-search" className="sr-only">Search apps, or ask a question</label>
           <input
@@ -110,7 +111,7 @@ export function Launcher({ mobile, onOpen, onAsk, onClose }: Props) {
             key={a.name}
             type="button"
             onClick={() => run(a)}
-            className="flex h-11 items-center gap-3 rounded-lg px-2.5 text-left text-sm transition-colors hover:bg-white/5"
+            className="flex h-11 shrink-0 items-center gap-3 rounded-lg px-2.5 text-left text-sm transition-colors hover:bg-white/5"
             style={{ background: a.isNew ? OS.tile : undefined }}
           >
             <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border text-[11px] font-bold" style={{ background: OS.card, borderColor: OS.tileHi, color: a.fg, fontFamily: MONO }}>

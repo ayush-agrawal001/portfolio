@@ -39,7 +39,7 @@ export const SERIF = 'var(--font-mincho), "Hiragino Mincho ProN", "Yu Mincho", s
 export const BAR_H = 28;
 export const DOCK_SPACE = 84;
 
-export type AppId = 'ask' | 'terminal' | 'projects' | 'music' | 'resume';
+export type AppId = 'ask' | 'terminal' | 'projects' | 'music' | 'resume' | 'threed';
 
 /** Border of the focused window: a quiet ink line, no neon. */
 export const ACTIVE_BORDER = '#54546D';

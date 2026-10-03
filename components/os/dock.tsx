@@ -9,7 +9,7 @@ import { GLASS, OS, SERIF, type AppId } from './theme';
 const BASE = 50; // resting icon size
 const MAX = 78; // size under the pointer
 const RANGE = 150; // how far the magnification reaches, in px
-const MOBILE_SIZE = 52;
+const MOBILE_SIZE = 48;
 
 type Item = {
   id: string;
@@ -87,6 +87,20 @@ const ITEMS: Item[] = [
     ),
   },
   {
+    id: 'threed',
+    label: '3D Portfolio',
+    app: 'threed',
+    bg: 'linear-gradient(145deg, #492931 0%, #15131F 100%)',
+    glyph: (
+      <>
+        <path d="M24 9l13 7.5v15L24 39l-13-7.5v-15z" fill="#FF6150" fillOpacity={0.12} stroke="#FF796B" strokeWidth={1.7} strokeLinejoin="round" />
+        <path d="M11 16.5L24 24l13-7.5M24 24v15" fill="none" stroke="#FF796B" strokeWidth={1.5} />
+        <path d="M6 31c9-15 27-18 36-12" fill="none" stroke="#FFE8DF" strokeWidth={1.8} strokeLinecap="round" />
+        <circle cx={30} cy={18} r={2.4} fill="#FFE8DF" />
+      </>
+    ),
+  },
+  {
     id: 'resume',
     label: 'Résumé',
     app: 'resume',
@@ -128,8 +142,8 @@ export function Dock({ mobile, askIsNew, running, launcherOpen, onOpen, onLaunch
   const mouseX = useMotionValue(Infinity);
   const magnify = !mobile && !reduce;
   const size = mobile ? MOBILE_SIZE : BASE;
-  // On phones the ensō in the menu bar opens the app menu, so the shelf keeps to the five apps.
-  const items = mobile ? ITEMS.filter((it) => !it.launcher) : ITEMS;
+  // Keep six apps within narrow screens; Mail remains available in the app menu.
+  const items = mobile ? ITEMS.filter((it) => it.app) : ITEMS;
 
   return (
     <div className="pointer-events-none absolute inset-x-0 bottom-2 z-[60] flex justify-center px-2">
